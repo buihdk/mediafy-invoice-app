@@ -168,14 +168,18 @@ export default function PaymentsPage() {
         </Button>
       </Box>
 
-      <div style={{ height: 400, width: "100%" }}>
-        <DataGrid
-          rows={payments}
-          columns={columns}
-          pageSize={5}
-          getRowId={(row) => row.id}
-        />
-      </div>
+      <DataGrid
+        height="100%"
+        rows={payments}
+        columns={columns}
+        pageSize={5}
+        getRowId={(row) => row.id}
+        sx={{
+          "& .MuiDataGrid-row:nth-of-type(even)": {
+            backgroundColor: "rgba(0,0,0,0.04)", // a light gray shade
+          },
+        }}
+      />
 
       <AddPaymentModal
         open={paymentModalOpen}

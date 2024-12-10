@@ -93,14 +93,19 @@ export default function ServicesPage() {
           Add Agreement
         </Button>
       </Box>
-      <div style={{ height: 400, width: "100%" }}>
-        <DataGrid
-          rows={agreements}
-          columns={columns}
-          pageSize={5}
-          getRowId={(row) => row.id}
-        />
-      </div>
+
+      <DataGrid
+        height="100%"
+        rows={agreements}
+        columns={columns}
+        pageSize={5}
+        getRowId={(row) => row.id}
+        sx={{
+          "& .MuiDataGrid-row:nth-of-type(even)": {
+            backgroundColor: "rgba(0,0,0,0.04)", // a light gray shade
+          },
+        }}
+      />
 
       <AddAgreementModal
         open={addModalOpen}

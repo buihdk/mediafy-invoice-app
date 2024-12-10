@@ -1,9 +1,19 @@
 // src/pages/MainPage.jsx
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { DataGrid } from "@mui/x-data-grid";
-import { Button, Box, Tooltip, IconButton } from "@mui/material";
-import { Create } from "@mui/icons-material";
+import {
+  Button,
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Tooltip,
+  IconButton,
+} from "@mui/material";
+import { Create, Delete, Receipt } from "@mui/icons-material";
 import {
   collection,
   getDocs,
@@ -21,6 +31,10 @@ export default function MainPage() {
   const [newClientModalOpen, setNewClientModalOpen] = useState(false);
   const [updateClientModalOpen, setUpdateClientModalOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(null);
+
+  // State for delete confirmation
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState(null);
 
   const navigate = useNavigate();
 
@@ -73,18 +87,50 @@ export default function MainPage() {
     }
   };
 
+  // Updated: Show confirmation dialog before deleting
+  const handleDeleteClick = (id) => {
+    setClientToDelete(id);
+    setDeleteConfirmationOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (clientToDelete) {
+      try {
+        await deleteDoc(doc(db, "clients", clientToDelete));
+        fetchClients();
+      } catch (e) {
+        console.error("Error deleting client:", e);
+      }
+    }
+    setDeleteConfirmationOpen(false);
+    setClientToDelete(null);
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirmationOpen(false);
+    setClientToDelete(null);
+  };
+
   const columns = useMemo(
     () => [
-      { field: "id", headerName: "Business ID", width: 100, hide: true },
+      { field: "id", headerName: "Business ID", width: 100 },
       {
         field: "name",
         headerName: "Business Name",
         width: 450,
+      },
+      { field: "email", headerName: "Email", width: 120 },
+      { field: "phone", headerName: "Phone", width: 120 },
+      { field: "dueMonthly", headerName: "Due Monthly", width: 120 },
+      {
+        field: "actions",
+        headerName: "Actions",
+        width: 160,
         renderCell: (params) => (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <span>{params.value}</span>
             <Tooltip title="Edit" placement="top" disableInteractive>
               <IconButton
+                color="primary"
                 size="small"
                 onClick={() => {
                   setSelectedClientId(params.row.id);
@@ -94,25 +140,28 @@ export default function MainPage() {
                 <Create />
               </IconButton>
             </Tooltip>
-            <Button
-              variant="outlined"
-              color="error"
-              size="small"
-              onClick={() => handleDeleteClient(params.row.id)}
-            >
-              Delete
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => navigate(`/services/${params.row.id}`)}
-            >
-              Services
-            </Button>
+            <Tooltip title="Services" placement="top" disableInteractive>
+              <IconButton
+                color="success"
+                size="small"
+                onClick={() => navigate(`/services/${params.row.id}`)}
+              >
+                <Receipt />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete" placement="top" disableInteractive>
+              <IconButton
+                color="error"
+                size="small"
+                onClick={() => handleDeleteClick(params.row.id)}
+                // onClick={() => handleDeleteClient(params.row.id)}
+              >
+                <Delete />
+              </IconButton>
+            </Tooltip>
           </Box>
         ),
       },
-      { field: "dueMonthly", headerName: "Due Monthly", width: 120 },
     ],
     [clients]
   );
@@ -124,14 +173,19 @@ export default function MainPage() {
           New Client
         </Button>
       </Box>
-      <div style={{ height: 400, width: "100%" }}>
-        <DataGrid
-          rows={clients}
-          columns={columns}
-          pageSize={5}
-          rowsPerPageOptions={[5]}
-        />
-      </div>
+      <DataGrid
+        height="100%"
+        columnVisibilityModel={{ id: false }}
+        rows={clients}
+        columns={columns}
+        pageSize={5}
+        rowsPerPageOptions={[5]}
+        sx={{
+          "& .MuiDataGrid-row:nth-of-type(even)": {
+            backgroundColor: "#f0fbfe", // a light gray shade
+          },
+        }}
+      />
 
       <NewClientModal
         open={newClientModalOpen}
@@ -148,6 +202,22 @@ export default function MainPage() {
           clients={clients}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmationOpen} onClose={cancelDelete}>
+        <DialogTitle>Delete Client</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this client?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelDelete}>Cancel</Button>
+          <Button onClick={confirmDelete} color="error">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

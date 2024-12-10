@@ -12,6 +12,7 @@ import {
   DialogActions,
   Tooltip,
   IconButton,
+  Typography,
 } from "@mui/material";
 import { Create, Delete, Receipt } from "@mui/icons-material";
 import {
@@ -119,7 +120,7 @@ export default function MainPage() {
         headerName: "Address",
         flex: 1,
         renderCell: (params) => {
-          if (!params.row) return '';
+          if (!params.row) return "";
           const { address, address2, city, state, zip } = params.row;
           const addr2 = address2 ? ` ${address2},` : "";
           return `${address || ""}${addr2} ${city || ""}, ${state || ""} ${
@@ -197,7 +198,10 @@ export default function MainPage() {
 
   return (
     <Box p={2}>
-      <Box mb={2}>
+      <Typography variant="h3" align="center">
+        Mediafy Payment Tracking
+      </Typography>
+      <Box mt={2} mb={2}>
         <Button
           variant="contained"
           onClick={() => {

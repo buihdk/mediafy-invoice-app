@@ -1,7 +1,7 @@
 // src/pages/PaymentsPage.jsx
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { Box, Typography, Button } from "@mui/material";
+import { Box, Typography, Button, IconButton, Tooltip } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { db } from "../firebase";
 import {
@@ -13,8 +13,12 @@ import {
   query,
   where,
   limit,
+  updateDoc,
 } from "firebase/firestore";
-import AddPaymentModal from "../components/AddPaymentModal";
+import { Create, Delete } from "@mui/icons-material";
+
+import { parseDate, dateSortComparator, formatDate } from "../helpers";
+import PaymentModal from "../components/PaymentModal";
 
 export default function PaymentsPage() {
   const { businessId, agreementNumber } = useParams();
@@ -22,6 +26,7 @@ export default function PaymentsPage() {
   const [agreement, setAgreement] = useState(null);
   const [payments, setPayments] = useState([]);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState(null);
 
   useEffect(() => {
     fetchClient();
@@ -104,10 +109,34 @@ export default function PaymentsPage() {
         date: paymentData.date,
         amount: paymentData.amount,
         method: paymentData.method,
+        note: paymentData.note || ""
       });
       fetchPayments();
     } catch (e) {
       console.error("Error adding payment:", e);
+    }
+  };
+
+  const handleUpdatePayment = async (paymentId, paymentData) => {
+    try {
+      const paymentDoc = doc(
+        db,
+        "clients",
+        businessId,
+        "agreements",
+        agreement.id,
+        "payments",
+        paymentId
+      );
+      await updateDoc(paymentDoc, {
+        date: paymentData.date,
+        amount: paymentData.amount,
+        method: paymentData.method,
+        note: paymentData.note || ""
+      });
+      fetchPayments();
+    } catch (e) {
+      console.error("Error updating payment:", e);
     }
   };
 
@@ -132,29 +161,75 @@ export default function PaymentsPage() {
 
   const columns = useMemo(
     () => [
-      { field: "date", headerName: "Date", width: 120 },
-      { field: "amount", headerName: "Payment", width: 100 },
+      {
+        field: "date",
+        headerName: "Date",
+        width: 120,
+        valueGetter: (params) => parseDate(params),
+        valueFormatter: (params) => formatDate(params),
+        sortComparator: dateSortComparator,
+      },
+      {
+        field: "amount",
+        headerName: "Payment",
+        width: 100,
+        valueFormatter: (params) => `$${params || 0}`,
+      },
       { field: "method", headerName: "Method", width: 120 },
+      {
+        field: "note",
+        headerName: "Note",
+        width: 200,
+        sortable: false,
+      },
       {
         field: "actions",
         headerName: "Actions",
         width: 150,
         renderCell: (params) => {
+          const rowPayment = params.row;
           return (
-            <Button
-              variant="outlined"
-              color="error"
-              size="small"
-              onClick={() => handleDeletePayment(params.row.id)}
-            >
-              Delete
-            </Button>
+            <Box sx={{ display: "flex", marginTop: 1, gap: 1 }}>
+              <Tooltip title="Edit" placement="top">
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={() => {
+                    setSelectedPayment(rowPayment);
+                    setPaymentModalOpen(true);
+                  }}
+                >
+                  <Create />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Delete" placement="top">
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => handleDeletePayment(rowPayment.id)}
+                >
+                  <Delete />
+                </IconButton>
+              </Tooltip>
+            </Box>
           );
         },
       },
     ],
     [payments]
   );
+
+  // Decide how to handle saving the payment (add or update)
+  const handleSavePayment = (paymentData) => {
+    if (selectedPayment) {
+      // Updating existing payment
+      handleUpdatePayment(selectedPayment.id, paymentData);
+    } else {
+      // Adding new payment
+      handleAddPayment(paymentData);
+    }
+    setSelectedPayment(null);
+  };
 
   return (
     <Box p={2}>
@@ -163,7 +238,13 @@ export default function PaymentsPage() {
       </Typography>
 
       <Box mt={2} mb={2}>
-        <Button variant="contained" onClick={() => setPaymentModalOpen(true)}>
+        <Button
+          variant="contained"
+          onClick={() => {
+            setSelectedPayment(null); // Reset for new payment
+            setPaymentModalOpen(true);
+          }}
+        >
           Add Payment
         </Button>
       </Box>
@@ -176,15 +257,16 @@ export default function PaymentsPage() {
         getRowId={(row) => row.id}
         sx={{
           "& .MuiDataGrid-row:nth-of-type(even)": {
-            backgroundColor: "rgba(0,0,0,0.04)", // a light gray shade
+            backgroundColor: "rgba(0,0,0,0.04)",
           },
         }}
       />
 
-      <AddPaymentModal
+      <PaymentModal
         open={paymentModalOpen}
         onClose={() => setPaymentModalOpen(false)}
-        onSave={handleAddPayment}
+        onSave={handleSavePayment}
+        payment={selectedPayment} // If not null, we are updating
       />
     </Box>
   );

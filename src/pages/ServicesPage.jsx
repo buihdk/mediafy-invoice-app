@@ -1,18 +1,43 @@
-// src/pages/ServicesPage.jsx
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Box, Typography, Button } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  IconButton,
+  Tooltip,
+} from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { db } from "../firebase";
-import { collection, getDocs, addDoc, doc } from "firebase/firestore";
-import AddAgreementModal from "../components/AddAgreementModal";
+import {
+  collection,
+  getDocs,
+  addDoc,
+  doc,
+  updateDoc,
+  deleteDoc,
+} from "firebase/firestore";
+import { Create, Delete, Payments } from "@mui/icons-material";
+
+import { parseDate, dateSortComparator, formatDate } from "../helpers";
+import AgreementModal from "../components/AgreementModal";
 
 export default function ServicesPage() {
   const { businessId } = useParams();
   const navigate = useNavigate();
   const [client, setClient] = useState(null);
   const [agreements, setAgreements] = useState([]);
-  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [agreementModalOpen, setAgreementModalOpen] = useState(false);
+  const [selectedAgreement, setSelectedAgreement] = useState(null);
+
+  // State for delete confirmation
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
+  const [agreementToDelete, setAgreementToDelete] = useState(null);
 
   useEffect(() => {
     fetchClientAndAgreements();
@@ -24,8 +49,7 @@ export default function ServicesPage() {
       const querySnapshot = await getDocs(agreementsRef);
       const agData = querySnapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-      // We might want to fetch the client name as well
-      // This is optional if you only want to show the name. If needed:
+      // Fetch client data
       const clientSnap = await getDocs(collection(db, "clients"));
       const clientData = clientSnap.docs.find((doc) => doc.id === businessId);
       setClient(
@@ -45,41 +69,146 @@ export default function ServicesPage() {
         ...agreementData,
         payments: [],
       });
-      setAddModalOpen(false);
+      setAgreementModalOpen(false);
       fetchClientAndAgreements();
     } catch (e) {
       console.error("Error adding agreement:", e);
     }
   };
 
-  const columns = useMemo(
-    () => [
+  const handleUpdateAgreement = async (agreementId, updatedData) => {
+    try {
+      const agreementRef = doc(
+        db,
+        "clients",
+        businessId,
+        "agreements",
+        agreementId
+      );
+      await updateDoc(agreementRef, updatedData);
+      fetchClientAndAgreements();
+    } catch (e) {
+      console.error("Error updating agreement:", e);
+    }
+  };
+
+  const handleDeleteAgreement = async (id) => {
+    try {
+      await deleteDoc(doc(db, "clients", businessId, "agreements", id));
+      fetchClientAndAgreements();
+    } catch (e) {
+      console.error("Error deleting agreement:", e);
+    }
+  };
+
+  const handleDeleteClick = (id) => {
+    setAgreementToDelete(id);
+    setDeleteConfirmationOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (agreementToDelete) {
+      handleDeleteAgreement(agreementToDelete);
+    }
+    setDeleteConfirmationOpen(false);
+    setAgreementToDelete(null);
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirmationOpen(false);
+    setAgreementToDelete(null);
+  };
+
+  const columns = useMemo(() => {
+    return [
+      { field: "agreementNumber", headerName: "Agreement #", width: 100 },
+      { field: "serviceCode", headerName: "Service Code", width: 200 },
+      { field: "duration", headerName: "Duration (months)", width: 140 },
       {
-        field: "payments",
-        headerName: "Payments",
+        field: "startDate",
+        headerName: "Start Date",
         width: 100,
+        valueGetter: (params) => parseDate(params),
+        valueFormatter: (params) => formatDate(params),
+        sortComparator: dateSortComparator,
+      },
+      {
+        field: "endDate",
+        headerName: "End Date",
+        width: 100,
+        valueGetter: (params) => parseDate(params),
+        valueFormatter: (params) => formatDate(params),
+        sortComparator: dateSortComparator,
+      },
+      {
+        field: "ratePerYear",
+        headerName: "Rate/Year",
+        width: 90,
+        valueFormatter: (params) => `$${params || 0}`,
+      },
+      {
+        field: "ratePerMonth",
+        headerName: "Rate/Month",
+        width: 100,
+        valueFormatter: (params) => `$${params || 0}`,
+      },
+      {
+        field: "actions",
+        headerName: "Actions",
+        width: 120,
         renderCell: (params) => (
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() =>
-              navigate(`/payments/${businessId}/${params.row.agreementNumber}`)
-            }
-          >
-            Payments
-          </Button>
+          <Box sx={{ display: "flex", marginTop: 1, gap: 1 }}>
+            <Tooltip title="Payments" placement="top">
+              <IconButton
+                color="success"
+                size="small"
+                onClick={() =>
+                  navigate(
+                    `/payments/${businessId}/${params.row.agreementNumber}`
+                  )
+                }
+              >
+                <Payments />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Edit" placement="top">
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={() => {
+                  setSelectedAgreement(params.row);
+                  setAgreementModalOpen(true);
+                }}
+              >
+                <Create />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete" placement="top">
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => handleDeleteClick(params.row.id)}
+              >
+                <Delete />
+              </IconButton>
+            </Tooltip>
+          </Box>
         ),
       },
-      { field: "agreementNumber", headerName: "Agreement Number", width: 150 },
-      { field: "serviceCode", headerName: "Service Code", width: 120 },
-      { field: "ratePerYear", headerName: "Rate/Year", width: 100 },
-      { field: "duration", headerName: "Duration (months)", width: 150 },
-      { field: "startDate", headerName: "Start Date", width: 120 },
-      { field: "endDate", headerName: "End Date", width: 120 },
-      { field: "ratePerMonth", headerName: "Rate/Month", width: 120 },
-    ],
-    [agreements]
-  );
+    ];
+  }, [agreements]);
+
+  // Decide how to handle saving the agreement (add or update)
+  const handleSaveAgreement = (agreementData) => {
+    if (selectedAgreement) {
+      // Updating existing agreement
+      handleUpdateAgreement(selectedAgreement.id, agreementData);
+    } else {
+      // Adding new agreement
+      handleAddAgreement(agreementData);
+    }
+    setSelectedAgreement(null);
+  };
 
   return (
     <Box p={2}>
@@ -89,7 +218,13 @@ export default function ServicesPage() {
         </Typography>
       </Box>
       <Box mb={2}>
-        <Button variant="contained" onClick={() => setAddModalOpen(true)}>
+        <Button
+          variant="contained"
+          onClick={() => {
+            setSelectedAgreement(null); // Clear selected for new
+            setAgreementModalOpen(true);
+          }}
+        >
           Add Agreement
         </Button>
       </Box>
@@ -102,21 +237,38 @@ export default function ServicesPage() {
         getRowId={(row) => row.id}
         sx={{
           "& .MuiDataGrid-row:nth-of-type(even)": {
-            backgroundColor: "rgba(0,0,0,0.04)", // a light gray shade
+            backgroundColor: "rgba(0,0,0,0.04)",
           },
         }}
       />
 
-      <AddAgreementModal
-        open={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        onSave={handleAddAgreement}
+      <AgreementModal
+        open={agreementModalOpen}
+        onClose={() => setAgreementModalOpen(false)}
+        onSave={handleSaveAgreement}
+        agreement={selectedAgreement}
         nextAgreementNumber={
           agreements.length > 0
             ? Math.max(...agreements.map((a) => a.agreementNumber)) + 1
             : 1
         }
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmationOpen} onClose={cancelDelete}>
+        <DialogTitle>Delete Agreement</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this agreement?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelDelete}>Cancel</Button>
+          <Button onClick={confirmDelete} color="error">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

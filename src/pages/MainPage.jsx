@@ -23,13 +23,11 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import NewClientModal from "../components/NewClientModal";
-import UpdateClientModal from "../components/UpdateClientModal";
+import ClientModal from "../components/ClientModal";
 
 export default function MainPage() {
   const [clients, setClients] = useState([]);
-  const [newClientModalOpen, setNewClientModalOpen] = useState(false);
-  const [updateClientModalOpen, setUpdateClientModalOpen] = useState(false);
+  const [clientModalOpen, setClientModalOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(null);
 
   // State for delete confirmation
@@ -57,8 +55,14 @@ export default function MainPage() {
       await addDoc(collection(db, "clients"), {
         name: clientData.name,
         address: clientData.address,
-        phone: clientData.phone,
-        contact: clientData.contact,
+        address2: clientData.address2 || "",
+        city: clientData.city || "",
+        state: clientData.state || "",
+        zip: clientData.zip || "",
+        email: clientData.email || "",
+        phone: clientData.phone || "",
+        cell: clientData.cell || "",
+        contact: clientData.contact || "",
         dueMonthly: clientData.dueMonthly || "0",
         lastPaymentDate: clientData.lastPaymentDate || "",
       });
@@ -78,16 +82,7 @@ export default function MainPage() {
     }
   };
 
-  const handleDeleteClient = async (id) => {
-    try {
-      await deleteDoc(doc(db, "clients", id));
-      fetchClients();
-    } catch (e) {
-      console.error("Error deleting client:", e);
-    }
-  };
-
-  // Updated: Show confirmation dialog before deleting
+  // Show confirmation dialog before deleting
   const handleDeleteClick = (id) => {
     setClientToDelete(id);
     setDeleteConfirmationOpen(true);
@@ -117,30 +112,36 @@ export default function MainPage() {
       {
         field: "name",
         headerName: "Business Name",
-        width: 450,
+        width: 300,
       },
-      { field: "email", headerName: "Email", width: 120 },
-      { field: "phone", headerName: "Phone", width: 120 },
-      { field: "dueMonthly", headerName: "Due Monthly", width: 120 },
+      {
+        field: "fullAddress",
+        headerName: "Address",
+        width: 450,
+        renderCell: (params) => {
+          if (!params.row) return '';
+          const { address, address2, city, state, zip } = params.row;
+          const addr2 = address2 ? ` ${address2},` : "";
+          return `${address || ""}${addr2} ${city || ""}, ${state || ""} ${
+            zip || ""
+          }`.trim();
+        },
+      },
+      { field: "email", headerName: "Email", width: 200 },
+      { field: "phone", headerName: "Phone", width: 200 },
+      {
+        field: "dueMonthly",
+        headerName: "Due Monthly",
+        width: 120,
+        valueFormatter: (params) => `$${params || 0}`,
+      },
       {
         field: "actions",
         headerName: "Actions",
         width: 160,
         renderCell: (params) => (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Tooltip title="Edit" placement="top" disableInteractive>
-              <IconButton
-                color="primary"
-                size="small"
-                onClick={() => {
-                  setSelectedClientId(params.row.id);
-                  setUpdateClientModalOpen(true);
-                }}
-              >
-                <Create />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Services" placement="top" disableInteractive>
+          <Box sx={{ display: "flex", marginTop: 1, gap: 1 }}>
+            <Tooltip title="Services" placement="top">
               <IconButton
                 color="success"
                 size="small"
@@ -149,12 +150,24 @@ export default function MainPage() {
                 <Receipt />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Delete" placement="top" disableInteractive>
+            <Tooltip title="Edit" placement="top">
+              <IconButton
+                color="primary"
+                size="small"
+                onClick={() => {
+                  setSelectedClientId(params.row.id);
+                  setClientModalOpen(true);
+                }}
+              >
+                <Create />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Delete" placement="top">
               <IconButton
                 color="error"
                 size="small"
                 onClick={() => handleDeleteClick(params.row.id)}
-                // onClick={() => handleDeleteClient(params.row.id)}
               >
                 <Delete />
               </IconButton>
@@ -166,10 +179,32 @@ export default function MainPage() {
     [clients]
   );
 
+  // Determine which client is currently being edited
+  const editingClient = selectedClientId
+    ? clients.find((c) => c.id === selectedClientId)
+    : null;
+
+  // Handle submit from ClientModal
+  const handleSubmitClient = (clientData) => {
+    if (editingClient) {
+      // Update existing client
+      handleUpdateClient(editingClient.id, clientData);
+    } else {
+      // Add new client
+      handleAddClient(clientData);
+    }
+  };
+
   return (
     <Box p={2}>
       <Box mb={2}>
-        <Button variant="contained" onClick={() => setNewClientModalOpen(true)}>
+        <Button
+          variant="contained"
+          onClick={() => {
+            setSelectedClientId(null); // Clear selected ID for a new client
+            setClientModalOpen(true);
+          }}
+        >
           New Client
         </Button>
       </Box>
@@ -182,26 +217,18 @@ export default function MainPage() {
         rowsPerPageOptions={[5]}
         sx={{
           "& .MuiDataGrid-row:nth-of-type(even)": {
-            backgroundColor: "#f0fbfe", // a light gray shade
+            backgroundColor: "#f0fbfe", // a light background shade
           },
         }}
       />
 
-      <NewClientModal
-        open={newClientModalOpen}
-        onClose={() => setNewClientModalOpen(false)}
-        onSave={handleAddClient}
+      {/* Unified Client Modal */}
+      <ClientModal
+        open={clientModalOpen}
+        onClose={() => setClientModalOpen(false)}
+        onSubmit={handleSubmitClient}
+        client={editingClient}
       />
-
-      {updateClientModalOpen && (
-        <UpdateClientModal
-          open={updateClientModalOpen}
-          onClose={() => setUpdateClientModalOpen(false)}
-          clientId={selectedClientId}
-          onUpdate={handleUpdateClient}
-          clients={clients}
-        />
-      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteConfirmationOpen} onClose={cancelDelete}>

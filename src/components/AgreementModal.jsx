@@ -1,5 +1,5 @@
-// src/components/AddAgreementModal.jsx
-import React, { useState } from "react";
+// src/components/AgreementModal.jsx
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -11,18 +11,51 @@ import {
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
 
-export default function AddAgreementModal({
+export default function AgreementModal({
   open,
   onClose,
   onSave,
+  agreement,
   nextAgreementNumber,
 }) {
+  const isUpdate = Boolean(agreement);
+
   const [agreementData, setAgreementData] = useState({
     serviceCode: "",
     ratePerYear: "",
     duration: "",
     startDate: null,
   });
+
+  useEffect(() => {
+    if (agreement) {
+      // Convert stored startDate back to a Date
+      let parsedDate = null;
+      if (agreement.startDate) {
+        const parts = agreement.startDate.split("/");
+        if (parts.length === 3) {
+          const month = parseInt(parts[0], 10) - 1;
+          const day = parseInt(parts[1], 10);
+          const year = parseInt(parts[2], 10);
+          parsedDate = new Date(year, month, day);
+        }
+      }
+
+      setAgreementData({
+        serviceCode: agreement.serviceCode || "",
+        ratePerYear: agreement.ratePerYear || "",
+        duration: agreement.duration?.toString() || "",
+        startDate: parsedDate,
+      });
+    } else {
+      setAgreementData({
+        serviceCode: "",
+        ratePerYear: "",
+        duration: "",
+        startDate: null,
+      });
+    }
+  }, [agreement]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -37,12 +70,14 @@ export default function AddAgreementModal({
       ? new Date(agreementData.startDate)
       : new Date();
     const endDate = new Date(startDate);
-    endDate.setMonth(endDate.getMonth() + duration);
+    endDate.setMonth(endDate.getMonth() + duration - 1);
 
     const ratePerMonth = (ratePerYear / duration).toFixed(2);
 
     onSave({
-      agreementNumber: nextAgreementNumber,
+      agreementNumber: isUpdate
+        ? agreement.agreementNumber
+        : nextAgreementNumber,
       serviceCode: agreementData.serviceCode,
       ratePerYear: agreementData.ratePerYear,
       duration,
@@ -50,17 +85,21 @@ export default function AddAgreementModal({
       endDate: endDate.toLocaleDateString(),
       ratePerMonth,
     });
+    onClose();
   };
 
   return (
     <Dialog open={open} onClose={onClose}>
-      <DialogTitle>New Agreement</DialogTitle>
+      <DialogTitle>
+        {isUpdate ? "Update Agreement" : "New Agreement"}
+      </DialogTitle>
       <DialogContent
         sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
       >
         <TextField
+          sx={{ marginTop: "10px" }}
           label="Agreement Number"
-          value={nextAgreementNumber}
+          value={isUpdate ? agreement.agreementNumber : nextAgreementNumber}
           InputProps={{ readOnly: true }}
         />
         <TextField
@@ -76,6 +115,7 @@ export default function AddAgreementModal({
           onChange={handleChange}
         />
         <TextField
+          type="number"
           label="Duration (months)"
           name="duration"
           value={agreementData.duration}
@@ -95,7 +135,7 @@ export default function AddAgreementModal({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSave}>Save</Button>
+        <Button onClick={handleSave}>{isUpdate ? "Save" : "Create"}</Button>
       </DialogActions>
     </Dialog>
   );

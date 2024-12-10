@@ -1,5 +1,4 @@
-// src/components/AddPaymentModal.jsx
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -8,15 +7,46 @@ import {
   TextField,
   Button,
   MenuItem,
+  InputAdornment,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
 
-export default function AddPaymentModal({ open, onClose, onSave }) {
+export default function PaymentModal({ open, onClose, onSave, payment }) {
+  const isUpdate = Boolean(payment);
+
   const [paymentData, setPaymentData] = useState({
     date: null,
     amount: "",
     method: "ACH",
+    note: "",
   });
+
+  useEffect(() => {
+    if (payment) {
+      let parsedDate = null;
+      if (payment.date) {
+        const parts = payment.date.split("/");
+        if (parts.length === 3) {
+          const month = parseInt(parts[0], 10) - 1;
+          const day = parseInt(parts[1], 10);
+          const year = parseInt(parts[2], 10);
+          const d = new Date(year, month, day);
+          if (!isNaN(d.getTime())) {
+            parsedDate = d;
+          }
+        }
+      }
+
+      setPaymentData({
+        date: parsedDate,
+        amount: payment.amount || "",
+        method: payment.method || "ACH",
+        note: payment.note || "",
+      });
+    } else {
+      setPaymentData({ date: null, amount: "", method: "ACH", note: "" });
+    }
+  }, [payment]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -30,18 +60,19 @@ export default function AddPaymentModal({ open, onClose, onSave }) {
         : "",
       amount: paymentData.amount,
       method: paymentData.method,
+      note: paymentData.note,
     });
-    setPaymentData({ date: null, amount: "", method: "ACH" });
     onClose();
   };
 
   return (
     <Dialog open={open} onClose={onClose}>
-      <DialogTitle>New Payment</DialogTitle>
+      <DialogTitle>{isUpdate ? "Update Payment" : "New Payment"}</DialogTitle>
       <DialogContent
         sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
       >
         <DatePicker
+          sx={{ marginTop: "10px" }}
           label="Date"
           value={paymentData.date}
           onChange={(newValue) =>
@@ -50,10 +81,18 @@ export default function AddPaymentModal({ open, onClose, onSave }) {
           renderInput={(params) => <TextField {...params} />}
         />
         <TextField
+          type="number"
           label="Amount"
           name="amount"
           value={paymentData.amount}
           onChange={handleChange}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">$</InputAdornment>
+              ),
+            },
+          }}
         />
         <TextField
           select
@@ -66,10 +105,18 @@ export default function AddPaymentModal({ open, onClose, onSave }) {
           <MenuItem value="Credit Card">Credit Card</MenuItem>
           <MenuItem value="Check">Check</MenuItem>
         </TextField>
+        <TextField
+          label="Note"
+          name="note"
+          value={paymentData.note}
+          onChange={handleChange}
+          multiline
+          rows={3}
+        />
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSave}>Save</Button>
+        <Button onClick={handleSave}>{isUpdate ? "Save" : "Create"}</Button>
       </DialogActions>
     </Dialog>
   );

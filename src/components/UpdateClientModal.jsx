@@ -31,6 +31,7 @@ export default function UpdateClientModal({
       setData({
         name: client.name || "",
         address: client.address || "",
+        email: client.email || "",
         phone: client.phone || "",
         contact: client.contact || "",
         dueMonthly: client.dueMonthly || "",
@@ -53,7 +54,7 @@ export default function UpdateClientModal({
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>Update Client</DialogTitle>
       <DialogContent
-        sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
+        sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1, width: 500 }}
       >
         <TextField
           label="Business Name"
@@ -68,9 +69,45 @@ export default function UpdateClientModal({
           onChange={handleChange}
         />
         <TextField
+          label="Address 2"
+          name="address2"
+          value={data.address2}
+          onChange={handleChange}
+        />
+        <TextField
+          label="City"
+          name="city"
+          value={data.city}
+          onChange={handleChange}
+        />
+        <TextField
+          label="State"
+          name="state"
+          value={data.state}
+          onChange={handleChange}
+        />
+        <TextField
+          label="Zip"
+          name="zip"
+          value={data.zip}
+          onChange={handleChange}
+        />
+        <TextField
+          label="Email"
+          name="email"
+          value={data.email}
+          onChange={handleChange}
+        />
+        <TextField
           label="Phone"
           name="phone"
           value={data.phone}
+          onChange={handleChange}
+        />
+        <TextField
+          label="Cell"
+          name="cell"
+          value={data.cell}
           onChange={handleChange}
         />
         <TextField
@@ -83,12 +120,6 @@ export default function UpdateClientModal({
           label="Due Monthly"
           name="dueMonthly"
           value={data.dueMonthly}
-          onChange={handleChange}
-        />
-        <TextField
-          label="Last Payment Date"
-          name="lastPaymentDate"
-          value={data.lastPaymentDate}
           onChange={handleChange}
         />
       </DialogContent>

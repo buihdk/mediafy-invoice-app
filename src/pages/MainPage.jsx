@@ -117,7 +117,7 @@ export default function MainPage() {
       {
         field: "fullAddress",
         headerName: "Address",
-        width: 450,
+        flex: 1,
         renderCell: (params) => {
           if (!params.row) return '';
           const { address, address2, city, state, zip } = params.row;

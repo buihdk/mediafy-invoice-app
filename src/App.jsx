@@ -4,6 +4,7 @@ import { Routes, Route } from "react-router-dom";
 import MainPage from "./pages/MainPage";
 import ServicesPage from "./pages/ServicesPage";
 import PaymentsPage from "./pages/PaymentsPage";
+import "./App.css";
 
 function App() {
   return (

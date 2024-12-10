@@ -1,6 +1,6 @@
 // src/pages/PaymentsPage.jsx
 import { useState, useEffect, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Box, Typography, Button, IconButton, Tooltip } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { db } from "../firebase";
@@ -15,12 +15,13 @@ import {
   limit,
   updateDoc,
 } from "firebase/firestore";
-import { Create, Delete } from "@mui/icons-material";
+import { Create, Delete, ArrowBack } from "@mui/icons-material";
 
 import { parseDate, dateSortComparator, formatDate } from "../helpers";
 import PaymentModal from "../components/PaymentModal";
 
 export default function PaymentsPage() {
+  const navigate = useNavigate();
   const { businessId, agreementNumber } = useParams();
   const [client, setClient] = useState(null);
   const [agreement, setAgreement] = useState(null);
@@ -109,7 +110,7 @@ export default function PaymentsPage() {
         date: paymentData.date,
         amount: paymentData.amount,
         method: paymentData.method,
-        note: paymentData.note || ""
+        note: paymentData.note || "",
       });
       fetchPayments();
     } catch (e) {
@@ -132,7 +133,7 @@ export default function PaymentsPage() {
         date: paymentData.date,
         amount: paymentData.amount,
         method: paymentData.method,
-        note: paymentData.note || ""
+        note: paymentData.note || "",
       });
       fetchPayments();
     } catch (e) {
@@ -179,17 +180,17 @@ export default function PaymentsPage() {
       {
         field: "note",
         headerName: "Note",
-        width: 200,
+        flex: 1,
         sortable: false,
       },
       {
         field: "actions",
         headerName: "Actions",
-        width: 150,
+        width: 100,
         renderCell: (params) => {
           const rowPayment = params.row;
           return (
-            <Box sx={{ display: "flex", marginTop: 1, gap: 1 }}>
+            <>
               <Tooltip title="Edit" placement="top">
                 <IconButton
                   size="small"
@@ -211,7 +212,7 @@ export default function PaymentsPage() {
                   <Delete />
                 </IconButton>
               </Tooltip>
-            </Box>
+            </>
           );
         },
       },
@@ -237,7 +238,14 @@ export default function PaymentsPage() {
         {client ? client.name : "Client"} - Agreement #{agreementNumber}
       </Typography>
 
-      <Box mt={2} mb={2}>
+      <Box mt={2} mb={2} display="flex" gap={1} justifyContent="center">
+        <Button
+          startIcon={<ArrowBack />}
+          onClick={() => navigate(`/services/${businessId}`)}
+          variant="outlined"
+        >
+          Back
+        </Button>
         <Button
           variant="contained"
           onClick={() => {

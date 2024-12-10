@@ -12,6 +12,7 @@ import {
   IconButton,
   Tooltip,
 } from "@mui/material";
+import { Create, Delete, Payments, ArrowBack } from "@mui/icons-material";
 import { DataGrid } from "@mui/x-data-grid";
 import { db } from "../firebase";
 import {
@@ -22,9 +23,13 @@ import {
   updateDoc,
   deleteDoc,
 } from "firebase/firestore";
-import { Create, Delete, Payments } from "@mui/icons-material";
 
-import { parseDate, dateSortComparator, formatDate } from "../helpers";
+import {
+  parseDate,
+  dateSortComparator,
+  formatDate,
+  serviceCodes,
+} from "../helpers";
 import AgreementModal from "../components/AgreementModal";
 
 export default function ServicesPage() {
@@ -122,7 +127,17 @@ export default function ServicesPage() {
   const columns = useMemo(() => {
     return [
       { field: "agreementNumber", headerName: "Agreement #", width: 100 },
-      { field: "serviceCode", headerName: "Service Code", width: 200 },
+      {
+        field: "serviceCode",
+        headerName: "Service(s)",
+        flex: 1,
+        valueFormatter: (params) => {
+          const val = params || [];
+          if (!Array.isArray(val)) return val; // In case older data is not in array form
+          const selectedObjs = serviceCodes.filter((sc) => val.includes(sc.id));
+          return selectedObjs.map((o) => o.label).join(", ");
+        },
+      },
       { field: "duration", headerName: "Duration (months)", width: 140 },
       {
         field: "startDate",
@@ -155,9 +170,9 @@ export default function ServicesPage() {
       {
         field: "actions",
         headerName: "Actions",
-        width: 120,
+        width: 130,
         renderCell: (params) => (
-          <Box sx={{ display: "flex", marginTop: 1, gap: 1 }}>
+          <>
             <Tooltip title="Payments" placement="top">
               <IconButton
                 color="success"
@@ -192,7 +207,7 @@ export default function ServicesPage() {
                 <Delete />
               </IconButton>
             </Tooltip>
-          </Box>
+          </>
         ),
       },
     ];
@@ -217,7 +232,14 @@ export default function ServicesPage() {
           {client ? client.name : "Client"} - Services
         </Typography>
       </Box>
-      <Box mb={2}>
+      <Box mb={2} display="flex" gap={1} justifyContent="center">
+        <Button
+          startIcon={<ArrowBack />}
+          onClick={() => navigate("/")} // navigate back to main page
+          variant="outlined"
+        >
+          Back
+        </Button>
         <Button
           variant="contained"
           onClick={() => {

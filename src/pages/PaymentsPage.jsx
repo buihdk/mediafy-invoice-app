@@ -186,7 +186,7 @@ export default function PaymentsPage() {
       {
         field: "actions",
         headerName: "Actions",
-        width: 100,
+        width: 90,
         renderCell: (params) => {
           const rowPayment = params.row;
           return (

@@ -139,9 +139,9 @@ export default function MainPage() {
       {
         field: "actions",
         headerName: "Actions",
-        width: 160,
+        width: 130,
         renderCell: (params) => (
-          <Box sx={{ display: "flex", marginTop: 1, gap: 1 }}>
+          <>
             <Tooltip title="Services" placement="top">
               <IconButton
                 color="success"
@@ -173,7 +173,7 @@ export default function MainPage() {
                 <Delete />
               </IconButton>
             </Tooltip>
-          </Box>
+          </>
         ),
       },
     ],

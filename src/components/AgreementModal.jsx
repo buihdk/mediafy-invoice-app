@@ -128,6 +128,7 @@ export default function AgreementModal({
         sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
       >
         <TextField
+          sx={{ marginTop: "10px" }}
           label="Agreement Number"
           value={isUpdate ? agreement.agreementNumber : nextAgreementNumber}
           InputProps={{ readOnly: true }}
@@ -172,10 +173,6 @@ export default function AgreementModal({
           }
           renderInput={(params) => <TextField {...params} />}
         />
-        <Typography variant="body2">
-          Rate/Month = sum of selected services. Rate/Year = Rate/Month * 12.
-          End date = Start date + (duration - 1) months.
-        </Typography>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>

@@ -1,5 +1,5 @@
 // src/components/AgreementModal.jsx
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -7,8 +7,7 @@ import {
   DialogActions,
   TextField,
   Button,
-  Typography,
-  Box,
+  InputAdornment,
   MenuItem,
   Select,
   InputLabel,
@@ -160,10 +159,18 @@ export default function AgreementModal({
         </FormControl>
 
         <TextField
-          label="Duration (months)"
+          type="number"
+          label="Duration"
           name="duration"
           value={agreementData.duration}
           onChange={handleChange}
+          slotProps={{
+            input: {
+              endAdornment: (
+                <InputAdornment position="start">months</InputAdornment>
+              ),
+            },
+          }}
         />
         <DatePicker
           label="Start Date"

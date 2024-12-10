@@ -138,7 +138,25 @@ export default function ServicesPage() {
           return selectedObjs.map((o) => o.label).join(", ");
         },
       },
-      { field: "duration", headerName: "Duration (months)", width: 140 },
+      {
+        field: "ratePerMonth",
+        headerName: "Rate/Month",
+        width: 100,
+        valueFormatter: (params) => `$${params || 0}`,
+      },
+      {
+        field: "ratePerYear",
+        headerName: "Rate/Year",
+        width: 90,
+        valueFormatter: (params) => `$${params || 0}`,
+      },
+      {
+        field: "duration",
+        headerName: "Duration",
+        width: 140,
+        valueFormatter: (params) =>
+          `${params || 0} month${params > 1 ? "s" : ""}`,
+      },
       {
         field: "startDate",
         headerName: "Start Date",
@@ -154,18 +172,6 @@ export default function ServicesPage() {
         valueGetter: (params) => parseDate(params),
         valueFormatter: (params) => formatDate(params),
         sortComparator: dateSortComparator,
-      },
-      {
-        field: "ratePerYear",
-        headerName: "Rate/Year",
-        width: 90,
-        valueFormatter: (params) => `$${params || 0}`,
-      },
-      {
-        field: "ratePerMonth",
-        headerName: "Rate/Month",
-        width: 100,
-        valueFormatter: (params) => `$${params || 0}`,
       },
       {
         field: "actions",

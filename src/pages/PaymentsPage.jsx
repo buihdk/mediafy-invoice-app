@@ -265,7 +265,7 @@ export default function PaymentsPage() {
         getRowId={(row) => row.id}
         sx={{
           "& .MuiDataGrid-row:nth-of-type(even)": {
-            backgroundColor: "rgba(0,0,0,0.04)",
+            backgroundColor: "#f0fbfe",
           },
         }}
       />

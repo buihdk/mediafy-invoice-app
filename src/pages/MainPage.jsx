@@ -14,7 +14,7 @@ import {
   IconButton,
   Typography,
 } from "@mui/material";
-import { Create, Delete, Receipt } from "@mui/icons-material";
+import { Create, Delete, Receipt, Payments } from "@mui/icons-material";
 import {
   collection,
   getDocs,
@@ -22,6 +22,9 @@ import {
   deleteDoc,
   doc,
   updateDoc,
+  query,
+  orderBy,
+  limit,
 } from "firebase/firestore";
 
 import ClientModal from "../components/ClientModal";
@@ -53,21 +56,40 @@ export default function MainPage() {
     }
   };
 
+  const fetchLatestAgreementNumber = async (clientId) => {
+    try {
+      const agreementsRef = collection(db, "clients", clientId, "agreements");
+      const q = query(
+        agreementsRef,
+        orderBy("agreementNumber", "desc"),
+        limit(1)
+      );
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const latestAgreement = querySnapshot.docs[0].data();
+        return latestAgreement.agreementNumber;
+      }
+      return null; // No agreements
+    } catch (e) {
+      console.error("Error fetching latest agreement:", e);
+      return null;
+    }
+  };
+
+  const handleRecentPaymentsClick = async (clientId) => {
+    const latestAgreementNumber = await fetchLatestAgreementNumber(clientId);
+    if (latestAgreementNumber !== null) {
+      navigate(`/payments/${clientId}/${latestAgreementNumber}`);
+    } else {
+      alert("No agreements found for this client.");
+    }
+  };
+
   const handleAddClient = async (clientData) => {
     try {
       await addDoc(collection(db, "clients"), {
-        name: clientData.name,
-        address: clientData.address,
-        address2: clientData.address2 || "",
-        city: clientData.city || "",
-        state: clientData.state || "",
-        zip: clientData.zip || "",
-        email: clientData.email || "",
-        phone: clientData.phone || "",
-        cell: clientData.cell || "",
-        contact: clientData.contact || "",
-        dueMonthly: clientData.dueMonthly || "0",
-        lastPaymentDate: clientData.lastPaymentDate || "",
+        ...clientData,
       });
       fetchClients();
     } catch (e) {
@@ -85,7 +107,6 @@ export default function MainPage() {
     }
   };
 
-  // Show confirmation dialog before deleting
   const handleDeleteClick = (id) => {
     setClientToDelete(id);
     setDeleteConfirmationOpen(true);
@@ -147,11 +168,20 @@ export default function MainPage() {
       {
         field: "actions",
         headerName: "Actions",
-        width: 130,
+        width: 160,
         sortable: false,
         filterable: false,
         renderCell: (params) => (
           <>
+            <Tooltip title="Recent Payments" placement="top">
+              <IconButton
+                color="secondary"
+                size="small"
+                onClick={() => handleRecentPaymentsClick(params.row.id)}
+              >
+                <Payments />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Services" placement="top">
               <IconButton
                 color="success"
@@ -173,7 +203,6 @@ export default function MainPage() {
                 <Create />
               </IconButton>
             </Tooltip>
-
             <Tooltip title="Delete" placement="top">
               <IconButton
                 color="error"
@@ -190,18 +219,14 @@ export default function MainPage() {
     [clients]
   );
 
-  // Determine which client is currently being edited
   const editingClient = selectedClientId
     ? clients.find((c) => c.id === selectedClientId)
     : null;
 
-  // Handle submit from ClientModal
   const handleSubmitClient = (clientData) => {
     if (editingClient) {
-      // Update existing client
       handleUpdateClient(editingClient.id, clientData);
     } else {
-      // Add new client
       handleAddClient(clientData);
     }
   };
@@ -215,7 +240,7 @@ export default function MainPage() {
         <Button
           variant="contained"
           onClick={() => {
-            setSelectedClientId(null); // Clear selected ID for a new client
+            setSelectedClientId(null);
             setClientModalOpen(true);
           }}
         >
@@ -231,12 +256,11 @@ export default function MainPage() {
         rowsPerPageOptions={[5]}
         sx={{
           "& .MuiDataGrid-row:nth-of-type(even)": {
-            backgroundColor: "#f0fbfe", // a light background shade
+            backgroundColor: "#f0fbfe",
           },
         }}
       />
 
-      {/* Unified Client Modal */}
       <ClientModal
         open={clientModalOpen}
         onClose={() => setClientModalOpen(false)}

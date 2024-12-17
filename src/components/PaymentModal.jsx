@@ -74,13 +74,13 @@ export default function PaymentModal({ open, onClose, onSave, payment }) {
       >
         <Box sx={{ display: "flex", gap: 2, marginTop: "10px" }}>
           <DatePicker
+            sx={{ width: "100%" }}
             label="Date"
             value={paymentData.date}
             onChange={(newValue) =>
               setPaymentData((prev) => ({ ...prev, date: newValue }))
             }
             renderInput={(params) => <TextField {...params} />}
-            sx={{ width: "100%" }}
           />
           <TextField
             select

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import {
+  Box,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -134,13 +135,51 @@ export default function AgreementModal({
       <DialogContent
         sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
       >
-        <TextField
-          sx={{ marginTop: "10px" }}
-          label="Agreement Number"
-          value={isUpdate ? agreement.agreementNumber : nextAgreementNumber}
-          InputProps={{ readOnly: true }}
-        />
-
+        <Box sx={{ display: "flex", gap: 2, marginTop: "10px" }}>
+          <TextField
+            fullWidth
+            label="Agreement Number"
+            value={isUpdate ? agreement.agreementNumber : nextAgreementNumber}
+            InputProps={{ readOnly: true }}
+          />
+          <DatePicker
+            sx={{ width: "100%" }}
+            label="Start Date"
+            value={agreementData.startDate}
+            onChange={(newValue) =>
+              setAgreementData((prev) => ({ ...prev, startDate: newValue }))
+            }
+            renderInput={(params) => <TextField {...params} />}
+          />
+        </Box>
+        <Box sx={{ display: "flex", gap: 2 }}>
+          <TextField
+            fullWidth
+            type="number"
+            label="Budget/Month"
+            name="budgetPerMonth"
+            value={agreementData.budgetPerMonth}
+            onChange={handleChange}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">$</InputAdornment>
+              ),
+            }}
+          />
+          <TextField
+            fullWidth
+            type="number"
+            label="Duration"
+            name="duration"
+            value={agreementData.duration}
+            onChange={handleChange}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">months</InputAdornment>
+              ),
+            }}
+          />
+        </Box>
         <FormControl>
           <InputLabel>Service Code</InputLabel>
           <Select
@@ -166,36 +205,6 @@ export default function AgreementModal({
             ))}
           </Select>
         </FormControl>
-        <TextField
-          type="number"
-          label="Budget/Month"
-          name="budgetPerMonth"
-          value={agreementData.budgetPerMonth}
-          onChange={handleChange}
-          InputProps={{
-            startAdornment: <InputAdornment position="start">$</InputAdornment>,
-          }}
-        />
-        <TextField
-          type="number"
-          label="Duration"
-          name="duration"
-          value={agreementData.duration}
-          onChange={handleChange}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">months</InputAdornment>
-            ),
-          }}
-        />
-        <DatePicker
-          label="Start Date"
-          value={agreementData.startDate}
-          onChange={(newValue) =>
-            setAgreementData((prev) => ({ ...prev, startDate: newValue }))
-          }
-          renderInput={(params) => <TextField {...params} />}
-        />
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>

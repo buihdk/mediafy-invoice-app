@@ -29,6 +29,7 @@ import {
   dateSortComparator,
   formatDate,
   serviceCodes,
+  formatMoney,
 } from "../helpers";
 import AgreementModal from "../components/AgreementModal";
 
@@ -141,19 +142,19 @@ export default function ServicesPage() {
       {
         field: "ratePerMonth",
         headerName: "Rate/Month",
-        width: 100,
-        valueFormatter: (params) => `$${params || 0}`,
+        width: 120,
+        valueFormatter: (params) => formatMoney(params),
       },
       {
         field: "ratePerYear",
         headerName: "Rate/Year",
-        width: 90,
-        valueFormatter: (params) => `$${params || 0}`,
+        width: 140,
+        valueFormatter: (params) => formatMoney(params),
       },
       {
         field: "duration",
         headerName: "Duration",
-        width: 140,
+        width: 100,
         valueFormatter: (params) =>
           `${params || 0} month${params > 1 ? "s" : ""}`,
       },
@@ -177,6 +178,8 @@ export default function ServicesPage() {
         field: "actions",
         headerName: "Actions",
         width: 130,
+        sortable: false,
+        filterable: false,
         renderCell: (params) => (
           <>
             <Tooltip title="Payments" placement="top">

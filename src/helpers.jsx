@@ -16,11 +16,31 @@ export function dateSortComparator(v1, v2) {
 }
 
 export function formatDate(date) {
-  if (!(date instanceof Date) || isNaN(date)) return '';
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  if (!(date instanceof Date) || isNaN(date)) return "";
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   const year = date.getFullYear();
   return `${month}/${day}/${year}`;
+}
+
+// Helper function to format phone numbers: (xxx) xxx-xxxx
+export function formatPhoneNumber(phone) {
+  if (!phone) return "";
+  const cleaned = ("" + phone).replace(/\D/g, ""); // Remove all non-digits
+  const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
+  if (match) {
+    return `(${match[1]}) ${match[2]}-${match[3]}`;
+  }
+  return phone; // If phone number is invalid, return as is
+}
+
+// Helper function to format money values with commas
+export function formatMoney(value) {
+  const formatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  });
+  return formatter.format(value || 0);
 }
 
 export const serviceCodes = [

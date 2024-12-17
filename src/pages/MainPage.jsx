@@ -23,8 +23,10 @@ import {
   doc,
   updateDoc,
 } from "firebase/firestore";
-import { db } from "../firebase";
+
 import ClientModal from "../components/ClientModal";
+import { db } from "../firebase";
+import { formatPhoneNumber, formatMoney } from "../helpers";
 
 export default function MainPage() {
   const [clients, setClients] = useState([]);
@@ -128,18 +130,26 @@ export default function MainPage() {
           }`.trim();
         },
       },
-      { field: "email", headerName: "Email", width: 200 },
-      { field: "phone", headerName: "Phone", width: 200 },
+      { field: "email", headerName: "Email", width: 280 },
+      {
+        field: "phone",
+        headerName: "Phone",
+        width: 120,
+        sortable: false,
+        valueFormatter: (params) => formatPhoneNumber(params),
+      },
       {
         field: "dueMonthly",
         headerName: "Due Monthly",
         width: 120,
-        valueFormatter: (params) => `$${params || 0}`,
+        valueFormatter: (params) => formatMoney(params),
       },
       {
         field: "actions",
         headerName: "Actions",
         width: 130,
+        sortable: false,
+        filterable: false,
         renderCell: (params) => (
           <>
             <Tooltip title="Services" placement="top">
@@ -199,7 +209,7 @@ export default function MainPage() {
   return (
     <Box p={2}>
       <Typography variant="h3" align="center">
-        Mediafy Payment Tracking
+        Mediafy Direct Data
       </Typography>
       <Box mt={2} mb={2}>
         <Button

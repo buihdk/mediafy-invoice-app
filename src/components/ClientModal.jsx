@@ -1,5 +1,4 @@
-// src/components/ClientModal.jsx
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -10,6 +9,8 @@ import {
   Box,
   InputAdornment,
 } from "@mui/material";
+
+import { formatPhoneNumber } from "../helpers";
 
 export default function ClientModal({ open, onClose, onSubmit, client }) {
   const isUpdate = Boolean(client);
@@ -155,8 +156,15 @@ export default function ClientModal({ open, onClose, onSubmit, client }) {
           <TextField
             label="Phone"
             name="phone"
-            value={data.phone}
-            onChange={handleChange}
+            value={formatPhoneNumber(data.phone)}
+            onChange={(e) =>
+              handleChange({
+                target: {
+                  name: "phone",
+                  value: e.target.value.replace(/\D/g, ""),
+                },
+              })
+            }
             fullWidth
           />
           <TextField

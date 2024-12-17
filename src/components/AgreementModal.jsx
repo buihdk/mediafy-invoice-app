@@ -1,4 +1,3 @@
-// src/components/AgreementModal.jsx
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -118,6 +117,11 @@ export default function AgreementModal({
     onClose();
   };
 
+  // Sort the serviceCodes alphabetically by label
+  const sortedServiceCodes = [...serviceCodes].sort((a, b) =>
+    a.label.localeCompare(b.label)
+  );
+
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>
@@ -141,13 +145,13 @@ export default function AgreementModal({
             value={agreementData.serviceCode}
             onChange={handleServiceCodeChange}
             renderValue={(selected) => {
-              const selectedObjs = serviceCodes.filter((sc) =>
+              const selectedObjs = sortedServiceCodes.filter((sc) =>
                 selected.includes(sc.id)
               );
               return selectedObjs.map((o) => o.code).join(", ");
             }}
           >
-            {serviceCodes.map((service) => (
+            {sortedServiceCodes.map((service) => (
               <MenuItem key={service.id} value={service.id}>
                 <Checkbox
                   checked={agreementData.serviceCode.indexOf(service.id) > -1}
@@ -164,12 +168,10 @@ export default function AgreementModal({
           name="duration"
           value={agreementData.duration}
           onChange={handleChange}
-          slotProps={{
-            input: {
-              endAdornment: (
-                <InputAdornment position="start">months</InputAdornment>
-              ),
-            },
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">months</InputAdornment>
+            ),
           }}
         />
         <DatePicker

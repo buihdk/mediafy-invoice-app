@@ -14,6 +14,7 @@ import {
   FormControl,
   Checkbox,
   ListItemText,
+  Chip,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
 
@@ -188,12 +189,18 @@ export default function AgreementModal({
             name="serviceCode"
             value={agreementData.serviceCode}
             onChange={handleServiceCodeChange}
-            renderValue={(selected) => {
-              const selectedObjs = sortedServiceCodes.filter((sc) =>
-                selected.includes(sc.id)
-              );
-              return selectedObjs.map((o) => o.code).join(", ");
-            }}
+            renderValue={(selected) => (
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                {selected.map((value) => {
+                  const service = sortedServiceCodes.find(
+                    (sc) => sc.id === value
+                  );
+                  return service ? (
+                    <Chip key={value} label={service.label} />
+                  ) : null;
+                })}
+              </Box>
+            )}
           >
             {sortedServiceCodes.map((service) => (
               <MenuItem key={service.id} value={service.id}>

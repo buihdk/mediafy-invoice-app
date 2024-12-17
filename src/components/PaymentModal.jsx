@@ -66,7 +66,7 @@ export default function PaymentModal({ open, onClose, onSave, payment }) {
   };
 
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={onClose} fullWidth>
       <DialogTitle>{isUpdate ? "Update Payment" : "New Payment"}</DialogTitle>
       <DialogContent
         sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}

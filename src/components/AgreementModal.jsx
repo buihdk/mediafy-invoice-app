@@ -127,7 +127,7 @@ export default function AgreementModal({
   );
 
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={onClose} fullWidth>
       <DialogTitle>
         {isUpdate ? "Update Agreement" : "New Agreement"}
       </DialogTitle>
@@ -145,6 +145,7 @@ export default function AgreementModal({
           <InputLabel>Service Code</InputLabel>
           <Select
             multiple
+            label="Service Code"
             name="serviceCode"
             value={agreementData.serviceCode}
             onChange={handleServiceCodeChange}

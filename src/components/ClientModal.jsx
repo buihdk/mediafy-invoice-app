@@ -93,7 +93,7 @@ export default function ClientModal({ open, onClose, onSubmit, client }) {
   };
 
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={onClose} fullWidth>
       <DialogTitle>{isUpdate ? "Update Client" : "New Client"}</DialogTitle>
       <DialogContent
         sx={{ display: "flex", flexDirection: "column", gap: 2, width: 500 }}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import {
+  Box,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -71,15 +72,29 @@ export default function PaymentModal({ open, onClose, onSave, payment }) {
       <DialogContent
         sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
       >
-        <DatePicker
-          sx={{ marginTop: "10px" }}
-          label="Date"
-          value={paymentData.date}
-          onChange={(newValue) =>
-            setPaymentData((prev) => ({ ...prev, date: newValue }))
-          }
-          renderInput={(params) => <TextField {...params} />}
-        />
+        <Box sx={{ display: "flex", gap: 2, marginTop: "10px" }}>
+          <DatePicker
+            label="Date"
+            value={paymentData.date}
+            onChange={(newValue) =>
+              setPaymentData((prev) => ({ ...prev, date: newValue }))
+            }
+            renderInput={(params) => <TextField {...params} />}
+            sx={{ width: "100%" }}
+          />
+          <TextField
+            select
+            label="Method"
+            name="method"
+            value={paymentData.method}
+            onChange={handleChange}
+            fullWidth
+          >
+            <MenuItem value="ACH">ACH</MenuItem>
+            <MenuItem value="Credit Card">Credit Card</MenuItem>
+            <MenuItem value="Check">Check</MenuItem>
+          </TextField>
+        </Box>
         <TextField
           type="number"
           label="Amount"
@@ -94,17 +109,6 @@ export default function PaymentModal({ open, onClose, onSave, payment }) {
             },
           }}
         />
-        <TextField
-          select
-          label="Method"
-          name="method"
-          value={paymentData.method}
-          onChange={handleChange}
-        >
-          <MenuItem value="ACH">ACH</MenuItem>
-          <MenuItem value="Credit Card">Credit Card</MenuItem>
-          <MenuItem value="Check">Check</MenuItem>
-        </TextField>
         <TextField
           label="Note"
           name="note"

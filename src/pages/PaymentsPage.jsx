@@ -1,283 +1,281 @@
-// src/pages/MainPage.jsx
+// src/pages/PaymentsPage.jsx
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { Box, Typography, Button, IconButton, Tooltip } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import {
-  Button,
-  Box,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  Tooltip,
-  IconButton,
-  Typography,
-} from "@mui/material";
-import { Create, Delete, Receipt, Payments } from "@mui/icons-material";
+import { db } from "../firebase";
 import {
   collection,
   getDocs,
   addDoc,
   deleteDoc,
   doc,
-  updateDoc,
   query,
-  orderBy,
+  where,
   limit,
+  updateDoc,
 } from "firebase/firestore";
+import { Create, Delete, ArrowBack } from "@mui/icons-material";
 
-import ClientModal from "../components/ClientModal";
-import { db } from "../firebase";
-import { formatPhoneNumber, formatMoney } from "../helpers";
+import { parseDate, dateSortComparator, formatDate } from "../helpers";
+import PaymentModal from "../components/PaymentModal";
 
-export default function MainPage() {
-  const [clients, setClients] = useState([]);
-  const [clientModalOpen, setClientModalOpen] = useState(false);
-  const [selectedClientId, setSelectedClientId] = useState(null);
-
-  // State for delete confirmation
-  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
-  const [clientToDelete, setClientToDelete] = useState(null);
-
+export default function PaymentsPage() {
   const navigate = useNavigate();
+  const { businessId, agreementNumber } = useParams();
+  const [client, setClient] = useState(null);
+  const [agreement, setAgreement] = useState(null);
+  const [payments, setPayments] = useState([]);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState(null);
 
   useEffect(() => {
-    fetchClients();
-  }, []);
+    fetchClient();
+  }, [businessId]);
 
-  const fetchClients = async () => {
+  useEffect(() => {
+    if (client) {
+      fetchAgreement();
+    }
+  }, [client, agreementNumber]);
+
+  useEffect(() => {
+    if (agreement) {
+      fetchPayments();
+    }
+  }, [agreement]);
+
+  const fetchClient = async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, "clients"));
-      const data = querySnapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setClients(data);
+      const clientSnap = await getDocs(collection(db, "clients"));
+      const clientData = clientSnap.docs.find((doc) => doc.id === businessId);
+      setClient(
+        clientData ? { id: clientData.id, ...clientData.data() } : null
+      );
     } catch (e) {
-      console.error("Error fetching clients:", e);
+      console.error("Error fetching client:", e);
     }
   };
 
-  const fetchLatestAgreementNumber = async (clientId) => {
+  const fetchAgreement = async () => {
     try {
-      const agreementsRef = collection(db, "clients", clientId, "agreements");
+      const agreementsRef = collection(db, "clients", businessId, "agreements");
       const q = query(
         agreementsRef,
-        orderBy("agreementNumber", "desc"),
+        where("agreementNumber", "==", parseInt(agreementNumber, 10)),
         limit(1)
       );
-      const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        const latestAgreement = querySnapshot.docs[0].data();
-        return latestAgreement.agreementNumber;
+      const qSnap = await getDocs(q);
+      if (!qSnap.empty) {
+        const agDoc = qSnap.docs[0];
+        setAgreement({ id: agDoc.id, ...agDoc.data() });
+      } else {
+        setAgreement(null);
       }
-      return null; // No agreements
     } catch (e) {
-      console.error("Error fetching latest agreement:", e);
-      return null;
+      console.error("Error fetching agreement:", e);
     }
   };
 
-  const handleRecentPaymentsClick = async (clientId) => {
-    const latestAgreementNumber = await fetchLatestAgreementNumber(clientId);
-    if (latestAgreementNumber !== null) {
-      navigate(`/payments/${clientId}/${latestAgreementNumber}`);
-    } else {
-      alert("No agreements found for this client.");
-    }
-  };
-
-  const handleAddClient = async (clientData) => {
+  const fetchPayments = async () => {
     try {
-      await addDoc(collection(db, "clients"), {
-        ...clientData,
+      if (!agreement) return;
+      const paymentsRef = collection(
+        db,
+        "clients",
+        businessId,
+        "agreements",
+        agreement.id,
+        "payments"
+      );
+      const pSnap = await getDocs(paymentsRef);
+      const pData = pSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setPayments(pData);
+    } catch (e) {
+      console.error("Error fetching payments:", e);
+    }
+  };
+
+  const handleAddPayment = async (paymentData) => {
+    try {
+      const paymentsRef = collection(
+        db,
+        "clients",
+        businessId,
+        "agreements",
+        agreement.id,
+        "payments"
+      );
+      await addDoc(paymentsRef, {
+        date: paymentData.date,
+        amount: paymentData.amount,
+        method: paymentData.method,
+        note: paymentData.note || "",
       });
-      fetchClients();
+      fetchPayments();
     } catch (e) {
-      console.error("Error adding client:", e);
+      console.error("Error adding payment:", e);
     }
   };
 
-  const handleUpdateClient = async (clientId, updatedData) => {
+  const handleUpdatePayment = async (paymentId, paymentData) => {
     try {
-      const clientRef = doc(db, "clients", clientId);
-      await updateDoc(clientRef, updatedData);
-      fetchClients();
+      const paymentDoc = doc(
+        db,
+        "clients",
+        businessId,
+        "agreements",
+        agreement.id,
+        "payments",
+        paymentId
+      );
+      await updateDoc(paymentDoc, {
+        date: paymentData.date,
+        amount: paymentData.amount,
+        method: paymentData.method,
+        note: paymentData.note || "",
+      });
+      fetchPayments();
     } catch (e) {
-      console.error("Error updating client:", e);
+      console.error("Error updating payment:", e);
     }
   };
 
-  const handleDeleteClick = (id) => {
-    setClientToDelete(id);
-    setDeleteConfirmationOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    if (clientToDelete) {
-      try {
-        await deleteDoc(doc(db, "clients", clientToDelete));
-        fetchClients();
-      } catch (e) {
-        console.error("Error deleting client:", e);
-      }
+  const handleDeletePayment = async (paymentId) => {
+    try {
+      await deleteDoc(
+        doc(
+          db,
+          "clients",
+          businessId,
+          "agreements",
+          agreement.id,
+          "payments",
+          paymentId
+        )
+      );
+      fetchPayments();
+    } catch (e) {
+      console.error("Error deleting payment:", e);
     }
-    setDeleteConfirmationOpen(false);
-    setClientToDelete(null);
-  };
-
-  const cancelDelete = () => {
-    setDeleteConfirmationOpen(false);
-    setClientToDelete(null);
   };
 
   const columns = useMemo(
     () => [
-      { field: "id", headerName: "Business ID", width: 100 },
       {
-        field: "name",
-        headerName: "Business Name",
-        width: 300,
+        field: "date",
+        headerName: "Date",
+        width: 120,
+        valueGetter: (params) => parseDate(params),
+        valueFormatter: (params) => formatDate(params),
+        sortComparator: dateSortComparator,
       },
       {
-        field: "fullAddress",
-        headerName: "Address",
+        field: "amount",
+        headerName: "Payment",
+        width: 100,
+        valueFormatter: (params) => `$${params || 0}`,
+      },
+      { field: "method", headerName: "Method", width: 120 },
+      {
+        field: "note",
+        headerName: "Note",
         flex: 1,
-        renderCell: (params) => {
-          if (!params.row) return "";
-          const { address, address2, city, state, zip } = params.row;
-          const addr2 = address2 ? ` ${address2},` : "";
-          return `${address || ""}${addr2} ${city || ""}, ${state || ""} ${
-            zip || ""
-          }`.trim();
-        },
-      },
-      { field: "email", headerName: "Email", width: 280 },
-      {
-        field: "phone",
-        headerName: "Phone",
-        width: 150,
-        valueFormatter: (params) => formatPhoneNumber(params.value),
-      },
-      {
-        field: "dueMonthly",
-        headerName: "Due Monthly",
-        width: 150,
-        valueFormatter: (params) => formatMoney(params.value),
+        sortable: false,
       },
       {
         field: "actions",
         headerName: "Actions",
-        width: 220,
-        renderCell: (params) => (
-          <>
-            <Tooltip title="Services" placement="top">
-              <IconButton
-                color="success"
-                size="small"
-                onClick={() => navigate(`/services/${params.row.id}`)}
-              >
-                <Receipt />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Recent Payments" placement="top">
-              <IconButton
-                color="info"
-                size="small"
-                onClick={() => handleRecentPaymentsClick(params.row.id)}
-              >
-                <Payments />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Edit" placement="top">
-              <IconButton
-                color="primary"
-                size="small"
-                onClick={() => {
-                  setSelectedClientId(params.row.id);
-                  setClientModalOpen(true);
-                }}
-              >
-                <Create />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete" placement="top">
-              <IconButton
-                color="error"
-                size="small"
-                onClick={() => handleDeleteClick(params.row.id)}
-              >
-                <Delete />
-              </IconButton>
-            </Tooltip>
-          </>
-        ),
+        width: 90,
+        renderCell: (params) => {
+          const rowPayment = params.row;
+          return (
+            <>
+              <Tooltip title="Edit" placement="top">
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={() => {
+                    setSelectedPayment(rowPayment);
+                    setPaymentModalOpen(true);
+                  }}
+                >
+                  <Create />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Delete" placement="top">
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => handleDeletePayment(rowPayment.id)}
+                >
+                  <Delete />
+                </IconButton>
+              </Tooltip>
+            </>
+          );
+        },
       },
     ],
-    [clients]
+    [payments]
   );
 
-  const editingClient = selectedClientId
-    ? clients.find((c) => c.id === selectedClientId)
-    : null;
-
-  const handleSubmitClient = (clientData) => {
-    if (editingClient) {
-      handleUpdateClient(editingClient.id, clientData);
+  // Decide how to handle saving the payment (add or update)
+  const handleSavePayment = (paymentData) => {
+    if (selectedPayment) {
+      // Updating existing payment
+      handleUpdatePayment(selectedPayment.id, paymentData);
     } else {
-      handleAddClient(clientData);
+      // Adding new payment
+      handleAddPayment(paymentData);
     }
+    setSelectedPayment(null);
   };
 
   return (
     <Box p={2}>
-      <Typography variant="h3" align="center">
-        Mediafy Direct Data
+      <Typography variant="h5">
+        {client ? client.name : "Client"} - Agreement #{agreementNumber}
       </Typography>
-      <Box mt={2} mb={2}>
+
+      <Box mt={2} mb={2} display="flex" gap={1} justifyContent="center">
+        <Button
+          startIcon={<ArrowBack />}
+          onClick={() => navigate(`/services/${businessId}`)}
+          variant="outlined"
+        >
+          Back
+        </Button>
         <Button
           variant="contained"
           onClick={() => {
-            setSelectedClientId(null);
-            setClientModalOpen(true);
+            setSelectedPayment(null); // Reset for new payment
+            setPaymentModalOpen(true);
           }}
         >
-          New Client
+          Add Payment
         </Button>
       </Box>
+
       <DataGrid
-        rows={clients}
+        height="100%"
+        rows={payments}
         columns={columns}
         pageSize={5}
-        rowsPerPageOptions={[5]}
+        getRowId={(row) => row.id}
         sx={{
           "& .MuiDataGrid-row:nth-of-type(even)": {
-            backgroundColor: "#f0fbfe",
+            backgroundColor: "rgba(0,0,0,0.04)",
           },
         }}
       />
 
-      <ClientModal
-        open={clientModalOpen}
-        onClose={() => setClientModalOpen(false)}
-        onSubmit={handleSubmitClient}
-        client={editingClient}
+      <PaymentModal
+        open={paymentModalOpen}
+        onClose={() => setPaymentModalOpen(false)}
+        onSave={handleSavePayment}
+        payment={selectedPayment} // If not null, we are updating
       />
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteConfirmationOpen} onClose={cancelDelete}>
-        <DialogTitle>Delete Client</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete this client?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={cancelDelete}>Cancel</Button>
-          <Button onClick={confirmDelete} color="error">
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }

@@ -162,7 +162,6 @@ export default function ServicesPage() {
         headerName: "Invoice/Month",
         width: 110,
         renderCell: (params) => {
-          console.log(params);
           const ratePerMonth = parseFloat(params?.row?.ratePerMonth) || 0;
           const budgetPerMonth = parseFloat(params?.row?.budgetPerMonth) || 0;
           return `$${(ratePerMonth + budgetPerMonth).toFixed(2)}`;

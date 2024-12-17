@@ -140,21 +140,38 @@ export default function ServicesPage() {
         },
       },
       {
-        field: "ratePerMonth",
-        headerName: "Rate/Month",
-        width: 120,
+        field: "ratePerYear",
+        headerName: "Rate/Year",
+        width: 100,
         valueFormatter: (params) => formatMoney(params),
       },
       {
-        field: "ratePerYear",
-        headerName: "Rate/Year",
-        width: 140,
+        field: "ratePerMonth",
+        headerName: "Rate/Month",
+        width: 100,
         valueFormatter: (params) => formatMoney(params),
+      },
+      {
+        field: "budgetPerMonth",
+        headerName: "Budget/Month",
+        width: 110,
+        valueFormatter: (params) => formatMoney(params),
+      },
+      {
+        field: "invoicePerMonth",
+        headerName: "Invoice/Month",
+        width: 110,
+        renderCell: (params) => {
+          console.log(params);
+          const ratePerMonth = parseFloat(params?.row?.ratePerMonth) || 0;
+          const budgetPerMonth = parseFloat(params?.row?.budgetPerMonth) || 0;
+          return `$${(ratePerMonth + budgetPerMonth).toFixed(2)}`;
+        },
       },
       {
         field: "duration",
         headerName: "Duration",
-        width: 100,
+        width: 90,
         valueFormatter: (params) =>
           `${params || 0} month${params > 1 ? "s" : ""}`,
       },

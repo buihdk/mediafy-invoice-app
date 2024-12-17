@@ -31,6 +31,7 @@ export default function AgreementModal({
     serviceCode: [],
     duration: "",
     startDate: null,
+    budgetPerMonth: "",
   });
 
   useEffect(() => {
@@ -55,12 +56,14 @@ export default function AgreementModal({
           : [],
         duration: agreement.duration?.toString() || "",
         startDate: parsedDate,
+        budgetPerMonth: agreement.budgetPerMonth || "",
       });
     } else {
       setAgreementData({
         serviceCode: [],
         duration: "",
         startDate: null,
+        budgetPerMonth: "",
       });
     }
   }, [agreement]);
@@ -113,6 +116,7 @@ export default function AgreementModal({
       endDate: endDate,
       ratePerMonth: ratePerMonth,
       ratePerYear: ratePerYear,
+      budgetPerMonth: parseFloat(agreementData.budgetPerMonth) || 0,
     });
     onClose();
   };
@@ -161,7 +165,16 @@ export default function AgreementModal({
             ))}
           </Select>
         </FormControl>
-
+        <TextField
+          type="number"
+          label="Budget/Month"
+          name="budgetPerMonth"
+          value={agreementData.budgetPerMonth}
+          onChange={handleChange}
+          InputProps={{
+            startAdornment: <InputAdornment position="start">$</InputAdornment>,
+          }}
+        />
         <TextField
           type="number"
           label="Duration"

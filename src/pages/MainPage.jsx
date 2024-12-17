@@ -175,7 +175,7 @@ export default function MainPage() {
           <>
             <Tooltip title="Recent Payments" placement="top">
               <IconButton
-                color="secondary"
+                color="warning"
                 size="small"
                 onClick={() => handleRecentPaymentsClick(params.row.id)}
               >

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
+  Chip,
   Typography,
   Button,
   Dialog,
@@ -132,11 +133,32 @@ export default function ServicesPage() {
         field: "serviceCode",
         headerName: "Service(s)",
         flex: 1,
-        valueFormatter: (params) => {
-          const val = params || [];
-          if (!Array.isArray(val)) return val; // In case older data is not in array form
-          const selectedObjs = serviceCodes.filter((sc) => val.includes(sc.id));
-          return selectedObjs.map((o) => o.label).join(", ");
+        renderCell: (params) => {
+          const val = params.row.serviceCode || [];
+          if (!Array.isArray(val)) return null; // Handle invalid data
+          const selectedServices = serviceCodes.filter((sc) =>
+            val.includes(sc.id)
+          );
+
+          return (
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 0.5,
+                maxWidth: "100%",
+              }}
+            >
+              {selectedServices.map((service) => (
+                <Chip
+                  key={service.id}
+                  label={`${service.id} (${formatMoney(service.monthly)})`}
+                  sx={{ backgroundColor: service.hex }}
+                  size="small"
+                />
+              ))}
+            </Box>
+          );
         },
       },
       {
@@ -279,12 +301,31 @@ export default function ServicesPage() {
       <DataGrid
         height="100%"
         rows={agreements}
+        getRowHeight={() => "auto"}
         columns={columns}
+        disableColumnSelector={true}
         pageSize={5}
         getRowId={(row) => row.id}
         sx={{
+          "& .MuiDataGrid-columnHeader": {
+            backgroundColor: "#346854",
+            color: "#fff",
+          },
+          "& .MuiDataGrid-columnSeparator": {
+            display: "none",
+          },
           "& .MuiDataGrid-row:nth-of-type(even)": {
-            backgroundColor: "#f0fbfe",
+            backgroundColor: "#f8f9fa",
+          },
+          "& .MuiDataGrid-cell": {
+            borderTop: "unset",
+          },
+          "& .MuiDataGrid-cell[data-field]:not([data-field='serviceCode'])": {
+            margin: "auto",
+          },
+          "& .MuiDataGrid-cell[data-field='serviceCode']": {
+            paddingTop: 1,
+            paddingBottom: 1,
           },
         }}
       />

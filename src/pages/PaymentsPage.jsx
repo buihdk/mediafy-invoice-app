@@ -264,8 +264,18 @@ export default function PaymentsPage() {
         pageSize={5}
         getRowId={(row) => row.id}
         sx={{
+          "& .MuiDataGrid-columnHeader": {
+            backgroundColor: "#346854",
+            color: "#fff",
+          },
+          "& .MuiDataGrid-columnSeparator": {
+            display: "none",
+          },
           "& .MuiDataGrid-row:nth-of-type(even)": {
-            backgroundColor: "#f0fbfe",
+            backgroundColor: "#f8f9fa",
+          },
+          "& .MuiDataGrid-cell": {
+            borderTop: "unset",
           },
         }}
       />

@@ -1,8 +1,7 @@
-// src/pages/PaymentsPage.jsx
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Box, Typography, Button, IconButton, Tooltip } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
+import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { db } from "../firebase";
 import {
   collection,
@@ -15,7 +14,7 @@ import {
   limit,
   updateDoc,
 } from "firebase/firestore";
-import { Create, Delete, ArrowBack, Home } from "@mui/icons-material"; // Import Home Icon
+import { Create, Delete, ArrowBack, Home } from "@mui/icons-material";
 
 import {
   parseDate,
@@ -25,14 +24,38 @@ import {
 } from "../helpers";
 import PaymentModal from "../components/PaymentModal";
 
+interface ClientData {
+  id: string;
+  name: string;
+}
+
+interface AgreementData {
+  id: string;
+  agreementNumber: number;
+}
+
+interface PaymentItem {
+  id: string;
+  date: string;
+  amount: string;
+  method: string;
+  note: string;
+  [key: string]: any;
+}
+
 export default function PaymentsPage() {
   const navigate = useNavigate();
-  const { businessId, agreementNumber } = useParams();
-  const [client, setClient] = useState(null);
-  const [agreement, setAgreement] = useState(null);
-  const [payments, setPayments] = useState([]);
+  const { businessId, agreementNumber } = useParams<{
+    businessId: string;
+    agreementNumber: string;
+  }>();
+  const [client, setClient] = useState<ClientData | null>(null);
+  const [agreement, setAgreement] = useState<AgreementData | null>(null);
+  const [payments, setPayments] = useState<PaymentItem[]>([]);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentItem | null>(
+    null
+  );
 
   useEffect(() => {
     fetchClient();
@@ -51,11 +74,16 @@ export default function PaymentsPage() {
   }, [agreement]);
 
   const fetchClient = async () => {
+    if (!businessId) return;
     try {
       const clientSnap = await getDocs(collection(db, "clients"));
-      const clientData = clientSnap.docs.find((doc) => doc.id === businessId);
+      const clientDoc = clientSnap.docs.find(
+        (docItem) => docItem.id === businessId
+      );
       setClient(
-        clientData ? { id: clientData.id, ...clientData.data() } : null
+        clientDoc
+          ? ({ id: clientDoc.id, ...clientDoc.data() } as ClientData)
+          : null
       );
     } catch (e) {
       console.error("Error fetching client:", e);
@@ -63,6 +91,7 @@ export default function PaymentsPage() {
   };
 
   const fetchAgreement = async () => {
+    if (!businessId || !agreementNumber) return;
     try {
       const agreementsRef = collection(db, "clients", businessId, "agreements");
       const q = query(
@@ -73,7 +102,7 @@ export default function PaymentsPage() {
       const qSnap = await getDocs(q);
       if (!qSnap.empty) {
         const agDoc = qSnap.docs[0];
-        setAgreement({ id: agDoc.id, ...agDoc.data() });
+        setAgreement({ id: agDoc.id, ...agDoc.data() } as AgreementData);
       } else {
         setAgreement(null);
       }
@@ -83,30 +112,34 @@ export default function PaymentsPage() {
   };
 
   const fetchPayments = async () => {
+    if (!agreement) return;
     try {
-      if (!agreement) return;
       const paymentsRef = collection(
         db,
         "clients",
-        businessId,
+        businessId!,
         "agreements",
         agreement.id,
         "payments"
       );
       const pSnap = await getDocs(paymentsRef);
-      const pData = pSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const pData = pSnap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      })) as PaymentItem[];
       setPayments(pData);
     } catch (e) {
       console.error("Error fetching payments:", e);
     }
   };
 
-  const handleAddPayment = async (paymentData) => {
+  const handleAddPayment = async (paymentData: Omit<PaymentItem, "id">) => {
+    if (!agreement) return;
     try {
       const paymentsRef = collection(
         db,
         "clients",
-        businessId,
+        businessId!,
         "agreements",
         agreement.id,
         "payments"
@@ -115,7 +148,7 @@ export default function PaymentsPage() {
         date: paymentData.date,
         amount: paymentData.amount,
         method: paymentData.method,
-        note: paymentData.note || "",
+        note: paymentData.note,
       });
       fetchPayments();
     } catch (e) {
@@ -123,36 +156,36 @@ export default function PaymentsPage() {
     }
   };
 
-  const handleUpdatePayment = async (paymentId, paymentData) => {
+  const handleUpdatePayment = async (
+    paymentId: string,
+    paymentData: Partial<PaymentItem>
+  ) => {
+    if (!agreement) return;
     try {
       const paymentDoc = doc(
         db,
         "clients",
-        businessId,
+        businessId!,
         "agreements",
         agreement.id,
         "payments",
         paymentId
       );
-      await updateDoc(paymentDoc, {
-        date: paymentData.date,
-        amount: paymentData.amount,
-        method: paymentData.method,
-        note: paymentData.note || "",
-      });
+      await updateDoc(paymentDoc, paymentData);
       fetchPayments();
     } catch (e) {
       console.error("Error updating payment:", e);
     }
   };
 
-  const handleDeletePayment = async (paymentId) => {
+  const handleDeletePayment = async (paymentId: string) => {
+    if (!agreement) return;
     try {
       await deleteDoc(
         doc(
           db,
           "clients",
-          businessId,
+          businessId!,
           "agreements",
           agreement.id,
           "payments",
@@ -165,7 +198,7 @@ export default function PaymentsPage() {
     }
   };
 
-  const columns = useMemo(
+  const columns = useMemo<GridColDef[]>(
     () => [
       {
         field: "date",
@@ -181,7 +214,11 @@ export default function PaymentsPage() {
         width: 100,
         valueFormatter: (params) => formatMoney(params),
       },
-      { field: "method", headerName: "Method", width: 120 },
+      {
+        field: "method",
+        headerName: "Method",
+        width: 120,
+      },
       {
         field: "note",
         headerName: "Note",
@@ -193,7 +230,7 @@ export default function PaymentsPage() {
         headerName: "Actions",
         width: 90,
         renderCell: (params) => {
-          const rowPayment = params.row;
+          const rowPayment = params.row as PaymentItem;
           return (
             <>
               <Tooltip title="Edit" placement="top">
@@ -222,11 +259,15 @@ export default function PaymentsPage() {
         },
       },
     ],
-    [payments]
+    []
   );
 
-  // Decide how to handle saving the payment (add or update)
-  const handleSavePayment = (paymentData) => {
+  const handleSavePayment = (paymentData: {
+    date: string;
+    amount: string;
+    method: string;
+    note: string;
+  }) => {
     if (selectedPayment) {
       // Updating existing payment
       handleUpdatePayment(selectedPayment.id, paymentData);
@@ -266,12 +307,15 @@ export default function PaymentsPage() {
       </Box>
 
       <DataGrid
-        height="100%"
         rows={payments}
         columns={columns}
-        pageSize={5}
+        pageSizeOptions={[5]}
+        initialState={{
+          pagination: { paginationModel: { pageSize: 5 } },
+        }}
         getRowId={(row) => row.id}
         sx={{
+          height: 500,
           "& .MuiDataGrid-columnHeader": {
             backgroundColor: "#346854",
             color: "#fff",
@@ -292,7 +336,7 @@ export default function PaymentsPage() {
         open={paymentModalOpen}
         onClose={() => setPaymentModalOpen(false)}
         onSave={handleSavePayment}
-        payment={selectedPayment} // If not null, we are updating
+        payment={selectedPayment || undefined}
       />
     </Box>
   );

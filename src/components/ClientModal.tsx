@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -9,13 +9,39 @@ import {
   Box,
   InputAdornment,
 } from "@mui/material";
-
 import { formatPhoneNumber } from "../helpers";
 
-export default function ClientModal({ open, onClose, onSubmit, client }) {
+interface ClientData {
+  name: string;
+  address: string;
+  address2: string;
+  city: string;
+  state: string;
+  zip: string;
+  email: string;
+  phone: string;
+  cell: string;
+  contact: string;
+  dueMonthly: string;
+  lastPaymentDate: string;
+}
+
+interface ClientModalProps {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (clientData: ClientData) => void;
+  client?: Partial<ClientData> & { [key: string]: any };
+}
+
+export default function ClientModal({
+  open,
+  onClose,
+  onSubmit,
+  client,
+}: ClientModalProps) {
   const isUpdate = Boolean(client);
 
-  const [data, setData] = useState({
+  const [data, setData] = useState<ClientData>({
     name: "",
     address: "",
     address2: "",
@@ -47,7 +73,6 @@ export default function ClientModal({ open, onClose, onSubmit, client }) {
         lastPaymentDate: client.lastPaymentDate || "",
       });
     } else {
-      // Clear if new
       setData({
         name: "",
         address: "",
@@ -65,7 +90,7 @@ export default function ClientModal({ open, onClose, onSubmit, client }) {
     }
   }, [client]);
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setData((prev) => ({ ...prev, [name]: value }));
   };
@@ -159,8 +184,11 @@ export default function ClientModal({ open, onClose, onSubmit, client }) {
             value={formatPhoneNumber(data.phone)}
             onChange={(e) =>
               handleChange({
+                ...e,
                 target: {
+                  ...e.target,
                   name: "phone",
+                  // store only digits in state
                   value: e.target.value.replace(/\D/g, ""),
                 },
               })
@@ -191,12 +219,8 @@ export default function ClientModal({ open, onClose, onSubmit, client }) {
             value={data.dueMonthly}
             onChange={handleChange}
             fullWidth
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">$</InputAdornment>
-                ),
-              },
+            InputProps={{
+              startAdornment: <InputAdornment position="start">$</InputAdornment>,
             }}
           />
         </Box>

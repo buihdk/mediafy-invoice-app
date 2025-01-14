@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import {
   Box,
   Dialog,
@@ -17,8 +17,34 @@ import {
   Chip,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
-
 import { serviceCodes } from "../helpers";
+
+interface AgreementData {
+  serviceCode: string[];
+  duration: string;
+  startDate: Date | null;
+  budgetPerMonth: string;
+}
+
+interface Agreement {
+  agreementNumber: number;
+  serviceCode?: string[];
+  duration?: number;
+  startDate?: string;
+  endDate?: string;
+  ratePerMonth?: string;
+  ratePerYear?: string;
+  budgetPerMonth?: number;
+}
+
+interface AgreementModalProps {
+  open: boolean;
+  onClose: () => void;
+  onSave: (data: Agreement) => void;
+  // If editing an existing one, else undefined
+  agreement?: Agreement;
+  nextAgreementNumber: number;
+}
 
 export default function AgreementModal({
   open,
@@ -26,10 +52,10 @@ export default function AgreementModal({
   onSave,
   agreement,
   nextAgreementNumber,
-}) {
+}: AgreementModalProps) {
   const isUpdate = Boolean(agreement);
 
-  const [agreementData, setAgreementData] = useState({
+  const [agreementData, setAgreementData] = useState<AgreementData>({
     serviceCode: [],
     duration: "",
     startDate: null,
@@ -38,7 +64,7 @@ export default function AgreementModal({
 
   useEffect(() => {
     if (agreement) {
-      let parsedDate = null;
+      let parsedDate: Date | null = null;
       if (agreement.startDate) {
         const parts = agreement.startDate.split("/");
         if (parts.length === 3) {
@@ -58,7 +84,7 @@ export default function AgreementModal({
           : [],
         duration: agreement.duration?.toString() || "",
         startDate: parsedDate,
-        budgetPerMonth: agreement.budgetPerMonth || "",
+        budgetPerMonth: agreement.budgetPerMonth?.toString() || "",
       });
     } else {
       setAgreementData({
@@ -70,13 +96,17 @@ export default function AgreementModal({
     }
   }, [agreement]);
 
-  const handleChange = (e) => {
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setAgreementData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleServiceCodeChange = (event) => {
-    const { value } = event.target;
+  const handleServiceCodeChange = (
+    event: ChangeEvent<{ value: unknown }>
+  ) => {
+    const { value } = event.target as { value: string[] | string };
     setAgreementData((prev) => ({
       ...prev,
       serviceCode: typeof value === "string" ? value.split(",") : value,
@@ -88,10 +118,7 @@ export default function AgreementModal({
     const selectedServices = serviceCodes.filter((sc) =>
       agreementData.serviceCode.includes(sc.id)
     );
-    const totalMonthly = selectedServices.reduce(
-      (sum, sc) => sum + sc.monthly,
-      0
-    );
+    const totalMonthly = selectedServices.reduce((sum, sc) => sum + sc.monthly, 0);
     const ratePerMonth = totalMonthly.toFixed(2);
 
     // Rate per Year = ratePerMonth * 12
@@ -107,9 +134,7 @@ export default function AgreementModal({
     }
 
     onSave({
-      agreementNumber: isUpdate
-        ? agreement.agreementNumber
-        : nextAgreementNumber,
+      agreementNumber: isUpdate ? agreement!.agreementNumber : nextAgreementNumber,
       serviceCode: agreementData.serviceCode,
       duration: duration,
       startDate: agreementData.startDate
@@ -140,17 +165,16 @@ export default function AgreementModal({
           <TextField
             fullWidth
             label="Agreement Number"
-            value={isUpdate ? agreement.agreementNumber : nextAgreementNumber}
+            value={isUpdate ? agreement!.agreementNumber : nextAgreementNumber}
             InputProps={{ readOnly: true }}
           />
           <DatePicker
-            sx={{ width: "100%" }}
             label="Start Date"
             value={agreementData.startDate}
             onChange={(newValue) =>
               setAgreementData((prev) => ({ ...prev, startDate: newValue }))
             }
-            renderInput={(params) => <TextField {...params} />}
+            slotProps={{ textField: { fullWidth: true } }}
           />
         </Box>
         <Box sx={{ display: "flex", gap: 2 }}>
@@ -191,7 +215,7 @@ export default function AgreementModal({
             onChange={handleServiceCodeChange}
             renderValue={(selected) => (
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                {selected.map((value) => {
+                {(selected as string[]).map((value) => {
                   const service = sortedServiceCodes.find(
                     (sc) => sc.id === value
                   );

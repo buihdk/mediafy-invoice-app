@@ -14,7 +14,7 @@ import {
   Tooltip,
 } from "@mui/material";
 import { Create, Delete, Payments, ArrowBack } from "@mui/icons-material";
-import { DataGrid } from "@mui/x-data-grid";
+import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { db } from "../firebase";
 import {
   collection,
@@ -34,33 +34,60 @@ import {
 } from "../helpers";
 import AgreementModal from "../components/AgreementModal";
 
-export default function ServicesPage() {
-  const { businessId } = useParams();
-  const navigate = useNavigate();
-  const [client, setClient] = useState(null);
-  const [agreements, setAgreements] = useState([]);
-  const [agreementModalOpen, setAgreementModalOpen] = useState(false);
-  const [selectedAgreement, setSelectedAgreement] = useState(null);
+interface ClientData {
+  id: string;
+  name: string;
+}
 
-  // State for delete confirmation
+interface AgreementData {
+  id: string;
+  agreementNumber: number;
+  serviceCode?: string[];
+  ratePerMonth?: string;
+  ratePerYear?: string;
+  budgetPerMonth?: number;
+  duration?: number;
+  startDate?: string;
+  endDate?: string;
+}
+
+export default function ServicesPage() {
+  const { businessId } = useParams<{ businessId: string }>();
+  const navigate = useNavigate();
+  const [client, setClient] = useState<ClientData | null>(null);
+  const [agreements, setAgreements] = useState<AgreementData[]>([]);
+  const [agreementModalOpen, setAgreementModalOpen] = useState(false);
+  const [selectedAgreement, setSelectedAgreement] =
+    useState<AgreementData | null>(null);
+
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
-  const [agreementToDelete, setAgreementToDelete] = useState(null);
+  const [agreementToDelete, setAgreementToDelete] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     fetchClientAndAgreements();
   }, [businessId]);
 
   const fetchClientAndAgreements = async () => {
+    if (!businessId) return;
     try {
       const agreementsRef = collection(db, "clients", businessId, "agreements");
       const querySnapshot = await getDocs(agreementsRef);
-      const agData = querySnapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const agData = querySnapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      })) as AgreementData[];
 
       // Fetch client data
       const clientSnap = await getDocs(collection(db, "clients"));
-      const clientData = clientSnap.docs.find((doc) => doc.id === businessId);
+      const clientDoc = clientSnap.docs.find(
+        (docItem) => docItem.id === businessId
+      );
       setClient(
-        clientData ? { id: clientData.id, ...clientData.data() } : null
+        clientDoc
+          ? ({ id: clientDoc.id, ...clientDoc.data() } as ClientData)
+          : null
       );
 
       setAgreements(agData);
@@ -69,7 +96,10 @@ export default function ServicesPage() {
     }
   };
 
-  const handleAddAgreement = async (agreementData) => {
+  const handleAddAgreement = async (
+    agreementData: Omit<AgreementData, "id">
+  ) => {
+    if (!businessId) return;
     try {
       const agreementsRef = collection(db, "clients", businessId, "agreements");
       await addDoc(agreementsRef, {
@@ -83,7 +113,11 @@ export default function ServicesPage() {
     }
   };
 
-  const handleUpdateAgreement = async (agreementId, updatedData) => {
+  const handleUpdateAgreement = async (
+    agreementId: string,
+    updatedData: Partial<AgreementData>
+  ) => {
+    if (!businessId) return;
     try {
       const agreementRef = doc(
         db,
@@ -99,7 +133,8 @@ export default function ServicesPage() {
     }
   };
 
-  const handleDeleteAgreement = async (id) => {
+  const handleDeleteAgreement = async (id: string) => {
+    if (!businessId) return;
     try {
       await deleteDoc(doc(db, "clients", businessId, "agreements", id));
       fetchClientAndAgreements();
@@ -108,7 +143,7 @@ export default function ServicesPage() {
     }
   };
 
-  const handleDeleteClick = (id) => {
+  const handleDeleteClick = (id: string) => {
     setAgreementToDelete(id);
     setDeleteConfirmationOpen(true);
   };
@@ -126,15 +161,15 @@ export default function ServicesPage() {
     setAgreementToDelete(null);
   };
 
-  const columns = useMemo(() => {
-    return [
+  const columns = useMemo<GridColDef<AgreementData>[]>(
+    () => [
       { field: "agreementNumber", headerName: "Agreement #", width: 100 },
       {
         field: "serviceCode",
         headerName: "Service(s)",
         flex: 1,
         renderCell: (params) => {
-          const val = params.row.serviceCode || [];
+          const val = params.value || [];
           if (!Array.isArray(val)) return null; // Handle invalid data
           const selectedServices = serviceCodes.filter((sc) =>
             val.includes(sc.id)
@@ -184,8 +219,9 @@ export default function ServicesPage() {
         headerName: "Invoice/Month",
         width: 110,
         renderCell: (params) => {
-          const ratePerMonth = parseFloat(params?.row?.ratePerMonth) || 0;
-          const budgetPerMonth = parseFloat(params?.row?.budgetPerMonth) || 0;
+          const row = params.row;
+          const ratePerMonth = parseFloat(row.ratePerMonth || "0") || 0;
+          const budgetPerMonth = parseFloat(String(row.budgetPerMonth)) || 0;
           return `$${(ratePerMonth + budgetPerMonth).toFixed(2)}`;
         },
       },
@@ -193,8 +229,10 @@ export default function ServicesPage() {
         field: "duration",
         headerName: "Duration",
         width: 90,
-        valueFormatter: (params) =>
-          `${params || 0} month${params > 1 ? "s" : ""}`,
+        valueFormatter: (params) => {
+          const val = params as number;
+          return `${val || 0} month${val > 1 ? "s" : ""}`;
+        },
       },
       {
         field: "startDate",
@@ -218,50 +256,53 @@ export default function ServicesPage() {
         width: 130,
         sortable: false,
         filterable: false,
-        renderCell: (params) => (
-          <>
-            <Tooltip title="Payments" placement="top">
-              <IconButton
-                color="success"
-                size="small"
-                onClick={() =>
-                  navigate(
-                    `/payments/${businessId}/${params.row.agreementNumber}`
-                  )
-                }
-              >
-                <Payments />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Edit" placement="top">
-              <IconButton
-                size="small"
-                color="primary"
-                onClick={() => {
-                  setSelectedAgreement(params.row);
-                  setAgreementModalOpen(true);
-                }}
-              >
-                <Create />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete" placement="top">
-              <IconButton
-                size="small"
-                color="error"
-                onClick={() => handleDeleteClick(params.row.id)}
-              >
-                <Delete />
-              </IconButton>
-            </Tooltip>
-          </>
-        ),
+        renderCell: (params) => {
+          const row = params.row;
+          return (
+            <>
+              <Tooltip title="Payments" placement="top">
+                <IconButton
+                  color="success"
+                  size="small"
+                  onClick={() =>
+                    navigate(`/payments/${businessId}/${row.agreementNumber}`)
+                  }
+                >
+                  <Payments />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Edit" placement="top">
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={() => {
+                    setSelectedAgreement(row);
+                    setAgreementModalOpen(true);
+                  }}
+                >
+                  <Create />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Delete" placement="top">
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => handleDeleteClick(row.id)}
+                >
+                  <Delete />
+                </IconButton>
+              </Tooltip>
+            </>
+          );
+        },
       },
-    ];
-  }, [agreements]);
+    ],
+    [businessId]
+  );
 
-  // Decide how to handle saving the agreement (add or update)
-  const handleSaveAgreement = (agreementData) => {
+  const handleSaveAgreement = (
+    agreementData: Omit<AgreementData, "id"> & { agreementNumber: number }
+  ) => {
     if (selectedAgreement) {
       // Updating existing agreement
       handleUpdateAgreement(selectedAgreement.id, agreementData);
@@ -282,7 +323,7 @@ export default function ServicesPage() {
       <Box mb={2} display="flex" gap={1} justifyContent="center">
         <Button
           startIcon={<ArrowBack />}
-          onClick={() => navigate("/")} // navigate back to main page
+          onClick={() => navigate("/")}
           variant="outlined"
         >
           Back
@@ -290,7 +331,7 @@ export default function ServicesPage() {
         <Button
           variant="contained"
           onClick={() => {
-            setSelectedAgreement(null); // Clear selected for new
+            setSelectedAgreement(null);
             setAgreementModalOpen(true);
           }}
         >
@@ -299,19 +340,18 @@ export default function ServicesPage() {
       </Box>
 
       <DataGrid
+        rows={agreements}
+        columns={columns}
+        getRowId={(row) => row.id}
         initialState={{
           sorting: {
             sortModel: [{ field: "agreementNumber", sort: "desc" }],
           },
+          pagination: { paginationModel: { pageSize: 5 } },
         }}
-        height="100%"
-        rows={agreements}
-        getRowHeight={() => "auto"}
-        columns={columns}
-        disableColumnSelector={true}
-        pageSize={5}
-        getRowId={(row) => row.id}
+        pageSizeOptions={[5]}
         sx={{
+          height: 500,
           "& .MuiDataGrid-columnHeader": {
             backgroundColor: "#346854",
             color: "#fff",
@@ -325,13 +365,6 @@ export default function ServicesPage() {
           "& .MuiDataGrid-cell": {
             borderTop: "unset",
           },
-          "& .MuiDataGrid-cell[data-field]:not([data-field='serviceCode'])": {
-            margin: "auto",
-          },
-          "& .MuiDataGrid-cell[data-field='serviceCode']": {
-            paddingTop: 1,
-            paddingBottom: 1,
-          },
         }}
       />
 
@@ -339,7 +372,7 @@ export default function ServicesPage() {
         open={agreementModalOpen}
         onClose={() => setAgreementModalOpen(false)}
         onSave={handleSaveAgreement}
-        agreement={selectedAgreement}
+        agreement={selectedAgreement || undefined}
         nextAgreementNumber={
           agreements.length > 0
             ? Math.max(...agreements.map((a) => a.agreementNumber)) + 1

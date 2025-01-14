@@ -1,7 +1,6 @@
-// src/pages/MainPage.jsx
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { DataGrid } from "@mui/x-data-grid";
+import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import {
   Button,
   Box,
@@ -31,14 +30,29 @@ import ClientModal from "../components/ClientModal";
 import { db } from "../firebase";
 import { formatPhoneNumber, formatMoney } from "../helpers";
 
-export default function MainPage() {
-  const [clients, setClients] = useState([]);
-  const [clientModalOpen, setClientModalOpen] = useState(false);
-  const [selectedClientId, setSelectedClientId] = useState(null);
+interface Client {
+  id: string;
+  name: string;
+  address: string;
+  address2?: string;
+  city: string;
+  state: string;
+  zip: string;
+  email: string;
+  phone: string;
+  cell?: string;
+  contact?: string;
+  dueMonthly?: string | number;
+  lastPaymentDate?: string;
+  [key: string]: any;
+}
 
-  // State for delete confirmation
+export default function MainPage() {
+  const [clients, setClients] = useState<Client[]>([]);
+  const [clientModalOpen, setClientModalOpen] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
-  const [clientToDelete, setClientToDelete] = useState(null);
+  const [clientToDelete, setClientToDelete] = useState<string | null>(null);
 
   const navigate = useNavigate();
 
@@ -49,25 +63,21 @@ export default function MainPage() {
   const fetchClients = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, "clients"));
-      const data = querySnapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const data = querySnapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Client[];
       setClients(data);
     } catch (e) {
       console.error("Error fetching clients:", e);
     }
   };
 
-  const fetchLatestAgreementNumber = async (clientId) => {
+  const fetchLatestAgreementNumber = async (clientId: string) => {
     try {
       const agreementsRef = collection(db, "clients", clientId, "agreements");
-      const q = query(
-        agreementsRef,
-        orderBy("agreementNumber", "desc"),
-        limit(1)
-      );
+      const q = query(agreementsRef, orderBy("agreementNumber", "desc"), limit(1));
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        const latestAgreement = querySnapshot.docs[0].data();
+        const latestAgreement = querySnapshot.docs[0].data() as { agreementNumber: number };
         return latestAgreement.agreementNumber;
       }
       return null; // No agreements
@@ -77,7 +87,7 @@ export default function MainPage() {
     }
   };
 
-  const handleRecentPaymentsClick = async (clientId) => {
+  const handleRecentPaymentsClick = async (clientId: string) => {
     const latestAgreementNumber = await fetchLatestAgreementNumber(clientId);
     if (latestAgreementNumber !== null) {
       navigate(`/payments/${clientId}/${latestAgreementNumber}`);
@@ -86,18 +96,16 @@ export default function MainPage() {
     }
   };
 
-  const handleAddClient = async (clientData) => {
+  const handleAddClient = async (clientData: Omit<Client, "id">) => {
     try {
-      await addDoc(collection(db, "clients"), {
-        ...clientData,
-      });
+      await addDoc(collection(db, "clients"), clientData);
       fetchClients();
     } catch (e) {
       console.error("Error adding client:", e);
     }
   };
 
-  const handleUpdateClient = async (clientId, updatedData) => {
+  const handleUpdateClient = async (clientId: string, updatedData: Partial<Client>) => {
     try {
       const clientRef = doc(db, "clients", clientId);
       await updateDoc(clientRef, updatedData);
@@ -107,7 +115,7 @@ export default function MainPage() {
     }
   };
 
-  const handleDeleteClick = (id) => {
+  const handleDeleteClick = (id: string) => {
     setClientToDelete(id);
     setDeleteConfirmationOpen(true);
   };
@@ -130,7 +138,7 @@ export default function MainPage() {
     setClientToDelete(null);
   };
 
-  const columns = useMemo(
+  const columns = useMemo<GridColDef[]>(
     () => [
       { field: "id", headerName: "Business ID", width: 100 },
       {
@@ -143,8 +151,8 @@ export default function MainPage() {
         headerName: "Address",
         flex: 1,
         renderCell: (params) => {
-          if (!params.row) return "";
-          const { address, address2, city, state, zip } = params.row;
+          const row = params.row as Client;
+          const { address, address2, city, state, zip } = row;
           const addr2 = address2 ? ` ${address2},` : "";
           return `${address || ""}${addr2} ${city || ""}, ${state || ""} ${
             zip || ""
@@ -157,13 +165,13 @@ export default function MainPage() {
         headerName: "Phone",
         width: 120,
         sortable: false,
-        valueFormatter: (params) => formatPhoneNumber(params),
+        valueFormatter: (params) => formatPhoneNumber(params.value),
       },
       {
         field: "dueMonthly",
         headerName: "Due Monthly",
         width: 120,
-        valueFormatter: (params) => formatMoney(params),
+        valueFormatter: (params) => formatMoney(params.value),
       },
       {
         field: "actions",
@@ -171,59 +179,62 @@ export default function MainPage() {
         width: 160,
         sortable: false,
         filterable: false,
-        renderCell: (params) => (
-          <>
-            <Tooltip title="Recent Payments" placement="top">
-              <IconButton
-                color="warning"
-                size="small"
-                onClick={() => handleRecentPaymentsClick(params.row.id)}
-              >
-                <Payments />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Services" placement="top">
-              <IconButton
-                color="success"
-                size="small"
-                onClick={() => navigate(`/services/${params.row.id}`)}
-              >
-                <Receipt />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Edit" placement="top">
-              <IconButton
-                color="primary"
-                size="small"
-                onClick={() => {
-                  setSelectedClientId(params.row.id);
-                  setClientModalOpen(true);
-                }}
-              >
-                <Create />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete" placement="top">
-              <IconButton
-                color="error"
-                size="small"
-                onClick={() => handleDeleteClick(params.row.id)}
-              >
-                <Delete />
-              </IconButton>
-            </Tooltip>
-          </>
-        ),
+        renderCell: (params) => {
+          const row = params.row as Client;
+          return (
+            <>
+              <Tooltip title="Recent Payments" placement="top">
+                <IconButton
+                  color="warning"
+                  size="small"
+                  onClick={() => handleRecentPaymentsClick(row.id)}
+                >
+                  <Payments />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Services" placement="top">
+                <IconButton
+                  color="success"
+                  size="small"
+                  onClick={() => navigate(`/services/${row.id}`)}
+                >
+                  <Receipt />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Edit" placement="top">
+                <IconButton
+                  color="primary"
+                  size="small"
+                  onClick={() => {
+                    setSelectedClientId(row.id);
+                    setClientModalOpen(true);
+                  }}
+                >
+                  <Create />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Delete" placement="top">
+                <IconButton
+                  color="error"
+                  size="small"
+                  onClick={() => handleDeleteClick(row.id)}
+                >
+                  <Delete />
+                </IconButton>
+              </Tooltip>
+            </>
+          );
+        },
       },
     ],
-    [clients]
+    []
   );
 
   const editingClient = selectedClientId
     ? clients.find((c) => c.id === selectedClientId)
     : null;
 
-  const handleSubmitClient = (clientData) => {
+  const handleSubmitClient = (clientData: any) => {
     if (editingClient) {
       handleUpdateClient(editingClient.id, clientData);
     } else {
@@ -248,13 +259,15 @@ export default function MainPage() {
         </Button>
       </Box>
       <DataGrid
-        height="100%"
-        columnVisibilityModel={{ id: false }}
         rows={clients}
         columns={columns}
-        pageSize={5}
-        rowsPerPageOptions={[5]}
+        pageSizeOptions={[5]}
+        initialState={{
+          pagination: { paginationModel: { pageSize: 5 } },
+        }}
+        getRowId={(row) => row.id}
         sx={{
+          height: 500,
           "& .MuiDataGrid-columnHeader": {
             backgroundColor: "#346854",
             color: "#fff",
@@ -275,7 +288,7 @@ export default function MainPage() {
         open={clientModalOpen}
         onClose={() => setClientModalOpen(false)}
         onSubmit={handleSubmitClient}
-        client={editingClient}
+        client={editingClient || undefined}
       />
 
       {/* Delete Confirmation Dialog */}

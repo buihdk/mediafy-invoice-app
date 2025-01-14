@@ -299,6 +299,11 @@ export default function ServicesPage() {
       </Box>
 
       <DataGrid
+        initialState={{
+          sorting: {
+            sortModel: [{ field: "agreementNumber", sort: "desc" }],
+          },
+        }}
         height="100%"
         rows={agreements}
         getRowHeight={() => "auto"}

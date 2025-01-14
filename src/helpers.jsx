@@ -56,7 +56,7 @@ export const serviceCodes = [
     label: "5 Page Website ($250.00)",
     monthly: 250,
     yearly: 3000,
-    hex: "#ffe4e1",
+    hex: "#b7f5da",
   },
   {
     id: "PAGES",
@@ -84,7 +84,7 @@ export const serviceCodes = [
     label: "Domain Emails ($30.00)",
     monthly: 30,
     yearly: 360,
-    hex: "#fce3e3",
+    hex: "#a2a7f5",
   },
   {
     id: "E-HOST",
@@ -147,7 +147,7 @@ export const serviceCodes = [
     label: "Online Reputation Management ($125.00)",
     monthly: 125,
     yearly: 1500,
-    hex: "#ffebee",
+    hex: "#fec464",
   },
   {
     id: "PREMPACK",
@@ -161,7 +161,7 @@ export const serviceCodes = [
     label: "SEO Power Booster ($250.00)",
     monthly: 250,
     yearly: 3000,
-    hex: "#d1c4e9",
+    hex: "#daf4f2",
   },
   {
     id: "SMMADS",

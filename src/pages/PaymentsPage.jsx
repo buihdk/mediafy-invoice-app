@@ -15,9 +15,14 @@ import {
   limit,
   updateDoc,
 } from "firebase/firestore";
-import { Create, Delete, ArrowBack } from "@mui/icons-material";
+import { Create, Delete, ArrowBack, Home } from "@mui/icons-material"; // Import Home Icon
 
-import { parseDate, dateSortComparator, formatDate } from "../helpers";
+import {
+  parseDate,
+  dateSortComparator,
+  formatDate,
+  formatMoney,
+} from "../helpers";
 import PaymentModal from "../components/PaymentModal";
 
 export default function PaymentsPage() {
@@ -174,7 +179,7 @@ export default function PaymentsPage() {
         field: "amount",
         headerName: "Payment",
         width: 100,
-        valueFormatter: (params) => `$${params || 0}`,
+        valueFormatter: (params) => formatMoney(params),
       },
       { field: "method", headerName: "Method", width: 120 },
       {
@@ -239,6 +244,9 @@ export default function PaymentsPage() {
       </Typography>
 
       <Box mt={2} mb={2} display="flex" gap={1} justifyContent="center">
+        <IconButton color="primary" onClick={() => navigate("/")}>
+          <Home />
+        </IconButton>
         <Button
           startIcon={<ArrowBack />}
           onClick={() => navigate(`/services/${businessId}`)}

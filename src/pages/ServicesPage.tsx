@@ -210,7 +210,7 @@ export default function ServicesPage() {
       },
       {
         field: "budgetPerMonth",
-        headerName: "Budget/Month",
+        headerName: "Custom/Month",
         width: 110,
         valueFormatter: (params) => formatMoney(params),
       },

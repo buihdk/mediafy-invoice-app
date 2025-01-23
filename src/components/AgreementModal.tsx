@@ -181,7 +181,7 @@ export default function AgreementModal({
           <TextField
             fullWidth
             type="number"
-            label="Budget/Month"
+            label="Custom/Month"
             name="budgetPerMonth"
             value={agreementData.budgetPerMonth}
             onChange={handleChange}

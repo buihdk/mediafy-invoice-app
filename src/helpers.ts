@@ -1,4 +1,7 @@
-export function parseDate(value) {
+/**
+ * Parse a date string in MM/DD/YYYY format and return a Date object or null
+ */
+export function parseDate(value?: string): Date | null {
   if (!value) return null;
   const parts = value.split("/");
   if (parts.length !== 3) return null;
@@ -9,33 +12,43 @@ export function parseDate(value) {
   return isNaN(d.getTime()) ? null : d;
 }
 
-export function dateSortComparator(v1, v2) {
+/**
+ * Comparator to sort dates in a grid or array
+ */
+export function dateSortComparator(v1?: Date, v2?: Date): number {
   if (!v1) return -1;
   if (!v2) return 1;
   return v1.getTime() - v2.getTime();
 }
 
-export function formatDate(date) {
-  if (!(date instanceof Date) || isNaN(date)) return "";
+/**
+ * Format a Date object as MM/DD/YYYY
+ */
+export function formatDate(date?: Date | null): string {
+  if (!date || isNaN(date.getTime())) return "";
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   const year = date.getFullYear();
   return `${month}/${day}/${year}`;
 }
 
-// Helper function to format phone numbers: (xxx) xxx-xxxx
-export function formatPhoneNumber(phone) {
+/**
+ * Format a string or number as phone (xxx) xxx-xxxx
+ */
+export function formatPhoneNumber(phone?: string | number): string {
   if (!phone) return "";
-  const cleaned = ("" + phone).replace(/\D/g, ""); // Remove all non-digits
+  const cleaned = String(phone).replace(/\D/g, ""); // Remove all non-digits
   const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
   if (match) {
     return `(${match[1]}) ${match[2]}-${match[3]}`;
   }
-  return phone; // If phone number is invalid, return as is
+  return String(phone); // If phone number is invalid, return as is
 }
 
-// Helper function to format money values with commas
-export function formatMoney(value) {
+/**
+ * Format a number as USD
+ */
+export function formatMoney(value?: number): string {
   const formatter = new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -43,7 +56,15 @@ export function formatMoney(value) {
   return formatter.format(value || 0);
 }
 
-export const serviceCodes = [
+interface ServiceCode {
+  id: string;
+  label: string;
+  monthly: number;
+  yearly: number;
+  hex: string;
+}
+
+export const serviceCodes: ServiceCode[] = [
   {
     id: "SITE-10",
     label: "10 Page Website ($500.00)",

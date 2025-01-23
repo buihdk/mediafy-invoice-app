@@ -12,10 +12,37 @@ import {
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
 
-export default function PaymentModal({ open, onClose, onSave, payment }) {
+interface PaymentData {
+  date: Date | null;
+  amount: string;
+  method: string;
+  note: string;
+}
+
+interface Payment {
+  id?: string;
+  date?: string;
+  amount?: string;
+  method?: string;
+  note?: string;
+}
+
+interface PaymentModalProps {
+  open: boolean;
+  onClose: () => void;
+  onSave: (data: Payment) => void;
+  payment?: Payment;
+}
+
+export default function PaymentModal({
+  open,
+  onClose,
+  onSave,
+  payment,
+}: PaymentModalProps) {
   const isUpdate = Boolean(payment);
 
-  const [paymentData, setPaymentData] = useState({
+  const [paymentData, setPaymentData] = useState<PaymentData>({
     date: null,
     amount: "",
     method: "ACH",
@@ -24,7 +51,7 @@ export default function PaymentModal({ open, onClose, onSave, payment }) {
 
   useEffect(() => {
     if (payment) {
-      let parsedDate = null;
+      let parsedDate: Date | null = null;
       if (payment.date) {
         const parts = payment.date.split("/");
         if (parts.length === 3) {
@@ -37,7 +64,6 @@ export default function PaymentModal({ open, onClose, onSave, payment }) {
           }
         }
       }
-
       setPaymentData({
         date: parsedDate,
         amount: payment.amount || "",
@@ -49,16 +75,16 @@ export default function PaymentModal({ open, onClose, onSave, payment }) {
     }
   }, [payment]);
 
-  const handleChange = (e) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setPaymentData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSave = () => {
     onSave({
-      date: paymentData.date
-        ? new Date(paymentData.date).toLocaleDateString()
-        : "",
+      date: paymentData.date ? paymentData.date.toLocaleDateString() : "",
       amount: paymentData.amount,
       method: paymentData.method,
       note: paymentData.note,
@@ -74,13 +100,12 @@ export default function PaymentModal({ open, onClose, onSave, payment }) {
       >
         <Box sx={{ display: "flex", gap: 2, marginTop: "10px" }}>
           <DatePicker
-            sx={{ width: "100%" }}
             label="Date"
             value={paymentData.date}
             onChange={(newValue) =>
               setPaymentData((prev) => ({ ...prev, date: newValue }))
             }
-            renderInput={(params) => <TextField {...params} />}
+            slotProps={{ textField: { fullWidth: true } }}
           />
           <TextField
             select
@@ -101,12 +126,8 @@ export default function PaymentModal({ open, onClose, onSave, payment }) {
           name="amount"
           value={paymentData.amount}
           onChange={handleChange}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">$</InputAdornment>
-              ),
-            },
+          InputProps={{
+            startAdornment: <InputAdornment position="start">$</InputAdornment>,
           }}
         />
         <TextField

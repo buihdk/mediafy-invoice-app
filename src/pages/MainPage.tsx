@@ -63,7 +63,10 @@ export default function MainPage() {
   const fetchClients = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, "clients"));
-      const data = querySnapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Client[];
+      const data = querySnapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      })) as Client[];
       setClients(data);
     } catch (e) {
       console.error("Error fetching clients:", e);
@@ -73,11 +76,17 @@ export default function MainPage() {
   const fetchLatestAgreementNumber = async (clientId: string) => {
     try {
       const agreementsRef = collection(db, "clients", clientId, "agreements");
-      const q = query(agreementsRef, orderBy("agreementNumber", "desc"), limit(1));
+      const q = query(
+        agreementsRef,
+        orderBy("agreementNumber", "desc"),
+        limit(1)
+      );
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        const latestAgreement = querySnapshot.docs[0].data() as { agreementNumber: number };
+        const latestAgreement = querySnapshot.docs[0].data() as {
+          agreementNumber: number;
+        };
         return latestAgreement.agreementNumber;
       }
       return null; // No agreements
@@ -105,7 +114,10 @@ export default function MainPage() {
     }
   };
 
-  const handleUpdateClient = async (clientId: string, updatedData: Partial<Client>) => {
+  const handleUpdateClient = async (
+    clientId: string,
+    updatedData: Partial<Client>
+  ) => {
     try {
       const clientRef = doc(db, "clients", clientId);
       await updateDoc(clientRef, updatedData);
@@ -165,13 +177,13 @@ export default function MainPage() {
         headerName: "Phone",
         width: 120,
         sortable: false,
-        valueFormatter: (params) => formatPhoneNumber(params.value),
+        valueFormatter: (params) => formatPhoneNumber(params),
       },
       {
         field: "dueMonthly",
         headerName: "Due Monthly",
         width: 120,
-        valueFormatter: (params) => formatMoney(params.value),
+        valueFormatter: (params) => formatMoney(params),
       },
       {
         field: "actions",
@@ -249,6 +261,7 @@ export default function MainPage() {
       </Typography>
       <Box mt={2} mb={2}>
         <Button
+          sx={{ background: "#346854" }}
           variant="contained"
           onClick={() => {
             setSelectedClientId(null);
@@ -259,15 +272,10 @@ export default function MainPage() {
         </Button>
       </Box>
       <DataGrid
+        columnVisibilityModel={{ id: false }}
         rows={clients}
         columns={columns}
-        pageSizeOptions={[5]}
-        initialState={{
-          pagination: { paginationModel: { pageSize: 5 } },
-        }}
-        getRowId={(row) => row.id}
         sx={{
-          height: 500,
           "& .MuiDataGrid-columnHeader": {
             backgroundColor: "#346854",
             color: "#fff",

@@ -188,8 +188,7 @@ export default function ClientModal({
                 target: {
                   ...e.target,
                   name: "phone",
-                  // store only digits in state
-                  value: e.target.value.replace(/\D/g, ""),
+                  value: e.target.value.replace(/\D/g, ""), // store only digits in state
                 },
               })
             }
@@ -198,8 +197,17 @@ export default function ClientModal({
           <TextField
             label="Cell"
             name="cell"
-            value={data.cell}
-            onChange={handleChange}
+            value={formatPhoneNumber(data.cell)}
+            onChange={(e) =>
+              handleChange({
+                ...e,
+                target: {
+                  ...e.target,
+                  name: "cell",
+                  value: e.target.value.replace(/\D/g, ""),
+                },
+              })
+            }
             fullWidth
           />
         </Box>
@@ -220,7 +228,9 @@ export default function ClientModal({
             onChange={handleChange}
             fullWidth
             InputProps={{
-              startAdornment: <InputAdornment position="start">$</InputAdornment>,
+              startAdornment: (
+                <InputAdornment position="start">$</InputAdornment>
+              ),
             }}
           />
         </Box>

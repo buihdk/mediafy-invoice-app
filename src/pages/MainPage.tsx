@@ -30,7 +30,7 @@ import ClientModal from "../components/ClientModal";
 import { db } from "../firebase";
 import { formatPhoneNumber, formatMoney } from "../helpers";
 
-interface Client {
+interface IClient {
   id: string;
   name: string;
   address: string;
@@ -48,7 +48,7 @@ interface Client {
 }
 
 export default function MainPage() {
-  const [clients, setClients] = useState<Client[]>([]);
+  const [clients, setClients] = useState<IClient[]>([]);
   const [clientModalOpen, setClientModalOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
@@ -66,7 +66,7 @@ export default function MainPage() {
       const data = querySnapshot.docs.map((d) => ({
         id: d.id,
         ...d.data(),
-      })) as Client[];
+      })) as IClient[];
       setClients(data);
     } catch (e) {
       console.error("Error fetching clients:", e);
@@ -105,7 +105,7 @@ export default function MainPage() {
     }
   };
 
-  const handleAddClient = async (clientData: Omit<Client, "id">) => {
+  const handleAddClient = async (clientData: Omit<IClient, "id">) => {
     try {
       await addDoc(collection(db, "clients"), clientData);
       fetchClients();
@@ -116,7 +116,7 @@ export default function MainPage() {
 
   const handleUpdateClient = async (
     clientId: string,
-    updatedData: Partial<Client>
+    updatedData: Partial<IClient>
   ) => {
     try {
       const clientRef = doc(db, "clients", clientId);
@@ -163,7 +163,7 @@ export default function MainPage() {
         headerName: "Address",
         flex: 1,
         renderCell: (params) => {
-          const row = params.row as Client;
+          const row = params.row as IClient;
           const { address, address2, city, state, zip } = row;
           const addr2 = address2 ? ` ${address2},` : "";
           return `${address || ""}${addr2} ${city || ""}, ${state || ""} ${
@@ -192,7 +192,7 @@ export default function MainPage() {
         sortable: false,
         filterable: false,
         renderCell: (params) => {
-          const row = params.row as Client;
+          const row = params.row as IClient;
           return (
             <>
               <Tooltip title="Recent Payments" placement="top">

@@ -165,7 +165,7 @@ export const serviceCodes: ServiceCode[] = [
   },
   {
     id: "ORM",
-    label: "Online Reputation Management ($125.00)",
+    label: "Online Reputation Management ($100.00)",
     monthly: 100,
     yearly: 1200,
     hex: "#fec464",

@@ -34,12 +34,12 @@ import {
 } from "../helpers";
 import AgreementModal from "../components/AgreementModal";
 
-interface ClientData {
+interface IClient {
   id: string;
   name: string;
 }
 
-interface AgreementData {
+interface IAgreement {
   id: string;
   agreementNumber: number;
   serviceCode?: string[];
@@ -54,11 +54,12 @@ interface AgreementData {
 export default function ServicesPage() {
   const { businessId } = useParams<{ businessId: string }>();
   const navigate = useNavigate();
-  const [client, setClient] = useState<ClientData | null>(null);
-  const [agreements, setAgreements] = useState<AgreementData[]>([]);
+  const [client, setClient] = useState<IClient | null>(null);
+  const [agreements, setAgreements] = useState<IAgreement[]>([]);
   const [agreementModalOpen, setAgreementModalOpen] = useState(false);
-  const [selectedAgreement, setSelectedAgreement] =
-    useState<AgreementData | null>(null);
+  const [selectedAgreement, setSelectedAgreement] = useState<IAgreement | null>(
+    null
+  );
 
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
   const [agreementToDelete, setAgreementToDelete] = useState<string | null>(
@@ -77,7 +78,7 @@ export default function ServicesPage() {
       const agData = querySnapshot.docs.map((d) => ({
         id: d.id,
         ...d.data(),
-      })) as AgreementData[];
+      })) as IAgreement[];
 
       // Fetch client data
       const clientSnap = await getDocs(collection(db, "clients"));
@@ -86,7 +87,7 @@ export default function ServicesPage() {
       );
       setClient(
         clientDoc
-          ? ({ id: clientDoc.id, ...clientDoc.data() } as ClientData)
+          ? ({ id: clientDoc.id, ...clientDoc.data() } as IClient)
           : null
       );
 
@@ -96,9 +97,7 @@ export default function ServicesPage() {
     }
   };
 
-  const handleAddAgreement = async (
-    agreementData: Omit<AgreementData, "id">
-  ) => {
+  const handleAddAgreement = async (agreementData: Omit<IAgreement, "id">) => {
     if (!businessId) return;
     try {
       const agreementsRef = collection(db, "clients", businessId, "agreements");
@@ -115,7 +114,7 @@ export default function ServicesPage() {
 
   const handleUpdateAgreement = async (
     agreementId: string,
-    updatedData: Partial<AgreementData>
+    updatedData: Partial<IAgreement>
   ) => {
     if (!businessId) return;
     try {
@@ -161,7 +160,7 @@ export default function ServicesPage() {
     setAgreementToDelete(null);
   };
 
-  const columns = useMemo<GridColDef<AgreementData>[]>(
+  const columns = useMemo<GridColDef<IAgreement>[]>(
     () => [
       { field: "agreementNumber", headerName: "Agreement #", width: 100 },
       {
@@ -210,7 +209,7 @@ export default function ServicesPage() {
       },
       {
         field: "budgetPerMonth",
-        headerName: "Custom/Month",
+        headerName: "Budget/Month",
         width: 110,
         valueFormatter: (params) => formatMoney(params),
       },
@@ -219,7 +218,7 @@ export default function ServicesPage() {
         headerName: "Invoice/Month",
         width: 110,
         renderCell: (params) => {
-          const row = params.row;
+          const row = params.row as IAgreement;
           const ratePerMonth = parseFloat(row.ratePerMonth || "0") || 0;
           const budgetPerMonth = parseFloat(String(row.budgetPerMonth)) || 0;
           return `$${(ratePerMonth + budgetPerMonth).toFixed(2)}`;
@@ -257,7 +256,7 @@ export default function ServicesPage() {
         sortable: false,
         filterable: false,
         renderCell: (params) => {
-          const row = params.row;
+          const row = params.row as IAgreement;
           return (
             <>
               <Tooltip title="Payments" placement="top">
@@ -301,13 +300,11 @@ export default function ServicesPage() {
   );
 
   const handleSaveAgreement = (
-    agreementData: Omit<AgreementData, "id"> & { agreementNumber: number }
+    agreementData: Omit<IAgreement, "id"> & { agreementNumber: number }
   ) => {
     if (selectedAgreement) {
-      // Updating existing agreement
       handleUpdateAgreement(selectedAgreement.id, agreementData);
     } else {
-      // Adding new agreement
       handleAddAgreement(agreementData);
     }
     setSelectedAgreement(null);
@@ -322,6 +319,7 @@ export default function ServicesPage() {
       </Box>
       <Box mb={2} display="flex" gap={1} justifyContent="center">
         <Button
+          color="success"
           startIcon={<ArrowBack />}
           onClick={() => navigate("/")}
           variant="outlined"
@@ -329,6 +327,7 @@ export default function ServicesPage() {
           Back
         </Button>
         <Button
+          sx={{ background: "#346854" }}
           variant="contained"
           onClick={() => {
             setSelectedAgreement(null);
@@ -341,17 +340,15 @@ export default function ServicesPage() {
 
       <DataGrid
         rows={agreements}
-        columns={columns}
+        getRowHeight={() => "auto"}
         getRowId={(row) => row.id}
+        columns={columns}
         initialState={{
           sorting: {
             sortModel: [{ field: "agreementNumber", sort: "desc" }],
           },
-          pagination: { paginationModel: { pageSize: 5 } },
         }}
-        pageSizeOptions={[5]}
         sx={{
-          height: 500,
           "& .MuiDataGrid-columnHeader": {
             backgroundColor: "#346854",
             color: "#fff",
@@ -364,6 +361,13 @@ export default function ServicesPage() {
           },
           "& .MuiDataGrid-cell": {
             borderTop: "unset",
+          },
+          "& .MuiDataGrid-cell[data-field]:not([data-field='serviceCode'])": {
+            margin: "auto",
+          },
+          "& .MuiDataGrid-cell[data-field='serviceCode']": {
+            paddingTop: 1,
+            paddingBottom: 1,
           },
         }}
       />

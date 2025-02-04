@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import { formatPhoneNumber } from "../helpers";
 
-interface ClientData {
+interface IClient {
   name: string;
   address: string;
   address2: string;
@@ -29,8 +29,8 @@ interface ClientData {
 interface ClientModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (clientData: ClientData) => void;
-  client?: Partial<ClientData> & { [key: string]: any };
+  onSubmit: (clientData: IClient) => void;
+  client?: Partial<IClient> & { [key: string]: any };
 }
 
 export default function ClientModal({
@@ -41,7 +41,7 @@ export default function ClientModal({
 }: ClientModalProps) {
   const isUpdate = Boolean(client);
 
-  const [data, setData] = useState<ClientData>({
+  const [data, setData] = useState<IClient>({
     name: "",
     address: "",
     address2: "",
@@ -182,32 +182,20 @@ export default function ClientModal({
             label="Phone"
             name="phone"
             value={formatPhoneNumber(data.phone)}
-            onChange={(e) =>
-              handleChange({
-                ...e,
-                target: {
-                  ...e.target,
-                  name: "phone",
-                  value: e.target.value.replace(/\D/g, ""), // store only digits in state
-                },
-              })
-            }
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, "");
+              setData(prev => ({ ...prev, phone: value }));
+            }}
             fullWidth
           />
           <TextField
             label="Cell"
             name="cell"
             value={formatPhoneNumber(data.cell)}
-            onChange={(e) =>
-              handleChange({
-                ...e,
-                target: {
-                  ...e.target,
-                  name: "cell",
-                  value: e.target.value.replace(/\D/g, ""),
-                },
-              })
-            }
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, "");
+              setData(prev => ({ ...prev, cell: value }));
+            }}
             fullWidth
           />
         </Box>

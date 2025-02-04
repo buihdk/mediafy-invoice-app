@@ -24,22 +24,22 @@ import {
 } from "../helpers";
 import PaymentModal from "../components/PaymentModal";
 
-interface ClientData {
+interface IClient {
   id: string;
   name: string;
 }
 
-interface AgreementData {
+interface IAgreement {
   id: string;
   agreementNumber: number;
 }
 
-interface PaymentItem {
-  id: string;
-  date: string;
-  amount: string;
-  method: string;
-  note: string;
+interface IPayment {
+  id?: string;
+  date?: string;
+  amount?: string;
+  method?: string;
+  note?: string;
   [key: string]: any;
 }
 
@@ -49,11 +49,11 @@ export default function PaymentsPage() {
     businessId: string;
     agreementNumber: string;
   }>();
-  const [client, setClient] = useState<ClientData | null>(null);
-  const [agreement, setAgreement] = useState<AgreementData | null>(null);
-  const [payments, setPayments] = useState<PaymentItem[]>([]);
+  const [client, setClient] = useState<IClient | null>(null);
+  const [agreement, setAgreement] = useState<IAgreement | null>(null);
+  const [payments, setPayments] = useState<IPayment[]>([]);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<PaymentItem | null>(
+  const [selectedPayment, setSelectedPayment] = useState<IPayment | null>(
     null
   );
 
@@ -82,7 +82,7 @@ export default function PaymentsPage() {
       );
       setClient(
         clientDoc
-          ? ({ id: clientDoc.id, ...clientDoc.data() } as ClientData)
+          ? ({ id: clientDoc.id, ...clientDoc.data() } as IClient)
           : null
       );
     } catch (e) {
@@ -102,7 +102,7 @@ export default function PaymentsPage() {
       const qSnap = await getDocs(q);
       if (!qSnap.empty) {
         const agDoc = qSnap.docs[0];
-        setAgreement({ id: agDoc.id, ...agDoc.data() } as AgreementData);
+        setAgreement({ id: agDoc.id, ...agDoc.data() } as IAgreement);
       } else {
         setAgreement(null);
       }
@@ -126,14 +126,14 @@ export default function PaymentsPage() {
       const pData = pSnap.docs.map((d) => ({
         id: d.id,
         ...d.data(),
-      })) as PaymentItem[];
+      })) as IPayment[];
       setPayments(pData);
     } catch (e) {
       console.error("Error fetching payments:", e);
     }
   };
 
-  const handleAddPayment = async (paymentData: Omit<PaymentItem, "id">) => {
+  const handleAddPayment = async (paymentData: Omit<IPayment, "id">) => {
     if (!agreement) return;
     try {
       const paymentsRef = collection(
@@ -158,7 +158,7 @@ export default function PaymentsPage() {
 
   const handleUpdatePayment = async (
     paymentId: string,
-    paymentData: Partial<PaymentItem>
+    paymentData: Partial<IPayment>
   ) => {
     if (!agreement) return;
     try {
@@ -230,7 +230,7 @@ export default function PaymentsPage() {
         headerName: "Actions",
         width: 90,
         renderCell: (params) => {
-          const rowPayment = params.row as PaymentItem;
+          const rowPayment = params.row as IPayment;
           return (
             <>
               <Tooltip title="Edit" placement="top">
@@ -249,7 +249,7 @@ export default function PaymentsPage() {
                 <IconButton
                   size="small"
                   color="error"
-                  onClick={() => handleDeletePayment(rowPayment.id)}
+                  onClick={() => rowPayment.id && handleDeletePayment(rowPayment.id)}
                 >
                   <Delete />
                 </IconButton>
@@ -262,18 +262,13 @@ export default function PaymentsPage() {
     []
   );
 
-  const handleSavePayment = (paymentData: {
-    date: string;
-    amount: string;
-    method: string;
-    note: string;
-  }) => {
-    if (selectedPayment) {
+  const handleSavePayment = (paymentData: IPayment) => {
+    if (selectedPayment?.id) {
       // Updating existing payment
       handleUpdatePayment(selectedPayment.id, paymentData);
     } else {
       // Adding new payment
-      handleAddPayment(paymentData);
+      handleAddPayment(paymentData as Omit<IPayment, "id">);
     }
     setSelectedPayment(null);
   };
@@ -285,10 +280,11 @@ export default function PaymentsPage() {
       </Typography>
 
       <Box mt={2} mb={2} display="flex" gap={1} justifyContent="center">
-        <IconButton color="primary" onClick={() => navigate("/")}>
+        <IconButton color="success" onClick={() => navigate("/")}>
           <Home />
         </IconButton>
         <Button
+          color="success"
           startIcon={<ArrowBack />}
           onClick={() => navigate(`/services/${businessId}`)}
           variant="outlined"
@@ -296,6 +292,7 @@ export default function PaymentsPage() {
           Back
         </Button>
         <Button
+          sx={{ background: "#346854" }}
           variant="contained"
           onClick={() => {
             setSelectedPayment(null); // Reset for new payment
@@ -309,13 +306,8 @@ export default function PaymentsPage() {
       <DataGrid
         rows={payments}
         columns={columns}
-        pageSizeOptions={[5]}
-        initialState={{
-          pagination: { paginationModel: { pageSize: 5 } },
-        }}
         getRowId={(row) => row.id}
         sx={{
-          height: 500,
           "& .MuiDataGrid-columnHeader": {
             backgroundColor: "#346854",
             color: "#fff",

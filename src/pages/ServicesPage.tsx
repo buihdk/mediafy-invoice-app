@@ -44,7 +44,6 @@ interface IAgreement {
   agreementNumber: number;
   serviceCode?: string[];
   ratePerMonth?: string;
-  ratePerYear?: string;
   budgetPerMonth?: number;
   duration?: number;
   startDate?: string;
@@ -194,12 +193,6 @@ export default function ServicesPage() {
             </Box>
           );
         },
-      },
-      {
-        field: "ratePerYear",
-        headerName: "Rate/Year",
-        width: 100,
-        valueFormatter: (params) => formatMoney(params),
       },
       {
         field: "ratePerMonth",

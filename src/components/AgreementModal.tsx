@@ -18,6 +18,7 @@ import {
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
 import { serviceCodes } from "../helpers";
+import { SelectChangeEvent } from "@mui/material";
 
 interface AgreementData {
   serviceCode: string[];
@@ -33,7 +34,6 @@ interface Agreement {
   startDate?: string;
   endDate?: string;
   ratePerMonth?: string;
-  ratePerYear?: string;
   budgetPerMonth?: number;
 }
 
@@ -103,10 +103,8 @@ export default function AgreementModal({
     setAgreementData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleServiceCodeChange = (
-    event: ChangeEvent<{ value: unknown }>
-  ) => {
-    const { value } = event.target as { value: string[] | string };
+  const handleServiceCodeChange = (event: SelectChangeEvent<string[]>) => {
+    const { value } = event.target;
     setAgreementData((prev) => ({
       ...prev,
       serviceCode: typeof value === "string" ? value.split(",") : value,
@@ -120,10 +118,6 @@ export default function AgreementModal({
     );
     const totalMonthly = selectedServices.reduce((sum, sc) => sum + sc.monthly, 0);
     const ratePerMonth = totalMonthly.toFixed(2);
-
-    // Rate per Year = ratePerMonth * 12
-    const ratePerYear = (parseFloat(ratePerMonth) * 12).toFixed(2);
-
     // End date = Start date + (duration - 1) months
     let endDate = "";
     const duration = parseInt(agreementData.duration, 10) || 1;
@@ -142,7 +136,6 @@ export default function AgreementModal({
         : "",
       endDate: endDate,
       ratePerMonth: ratePerMonth,
-      ratePerYear: ratePerYear,
       budgetPerMonth: parseFloat(agreementData.budgetPerMonth) || 0,
     });
     onClose();
